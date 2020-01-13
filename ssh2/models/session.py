@@ -1,0 +1,53 @@
+# -*- coding: utf-8 -*-
+import json
+from typing import List
+from sqlalchemy import Column, Integer, ForeignKey, Sequence, String, Text
+from sqlalchemy.orm import relationship
+
+from ssh2.utils import uuid_str
+from ssh2.models import BaseModel
+
+
+class Session(BaseModel):
+    __tablename__ = 'session'
+
+    id = Column("id", Integer, Sequence("session_id_seq"), primary_key=True)
+    tag = Column("tag", String(16), index=True, unique=True)
+    name = Column("name", String(32), unique=True, default=uuid_str)
+    plugins = Column("plugings", Text)
+
+    client_config_id = Column(Integer, ForeignKey('client_config.id'))
+    server_config_id = Column(Integer, ForeignKey('server_config.id'))
+
+    client = relationship("ClientConfig", back_populates="sessions")
+    server = relationship("ServerConfig", back_populates="sessions")
+
+    def to_expect_cmds(self) -> str:
+        from ssh2.plugins import BasePlugin
+        plugins: List[dict] = json.loads(self.plugins)
+        cmds = ["set timeout 20"]
+
+        for plugin in plugins:
+            plugin = BasePlugin.from_dict(plugin)
+            cmds.extend(plugin.to_expect_cmds(self))
+
+        if "interact" not in cmds:
+            cmds.append("interact")
+
+        return "\n".join(cmds)
+
+    def __str__(self):
+        return f"Session<{self.id}: [{self.tag}-{self.name}]>"
+
+    def to_json(self):
+        plugins: List[dict] = json.loads(self.plugins)
+
+        return dict(
+            kind="Session",
+            filter_by="id",
+            filter_value=self.id,
+            spec=dict(name=self.name,
+                      tag=self.tag,
+                      client=self.client.to_json(),
+                      server=self.server.to_json(),
+                      plugins=plugins))

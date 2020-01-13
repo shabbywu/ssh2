@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "ssh2"
+version = "0.1.0"
+description = "A Tool to manage ssh connection"
+
+license = "MIT"
+
+authors = [
+    "shabbywu <shabbywu@tencent.com>"
+]
+
+readme = 'README.md'  # Markdown files are supported
+
+keywords = ['ssh']
+
+packages = [
+    { include = "ssh2_wrapper.sh" },
+    { include = "ssh2" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"  # Compatible python versions must be declared here
+click = ">=7.0"
+PyYaml = "==5.1.2"
+sqlalchemy = "==1.3.10"
+cryptography = "==2.8"
+aenum = "==2.2.2"
+
+ssh2-ioa = { version = "*", optional = true }
+
+[tool.poetry.dev-dependencies]
+pytest = "^3.0"
+pytest-cov = "^2.4"
+
+[tool.poetry.extras]
+ioa = ["ssh2-ioa"]
+
+[tool.poetry.scripts]
+ssh2 = 'ssh2.cli.main:cli'
