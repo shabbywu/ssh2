@@ -41,8 +41,9 @@ class YamlParser:
     def _parse(self, document, session=None):
         kind = document.pop('kind')
         spec = document.pop('spec', {})
-        obj_filter_by = document.pop('filter_by', None)
-        obj_filter_value = document.pop('filter_value', None)
+        ref = document.pop("ref", {})
+        obj_filter_by = ref.pop("field", None)
+        obj_filter_value = ref.pop("value", None)
         if kind not in KindMapper:
             raise NotImplementedError(kind)
         cls = KindMapper[kind]
@@ -53,8 +54,9 @@ class YamlParser:
         for attr, kind in AttrKindMapper.items():
             if attr in spec:
                 obj_define = spec.pop(attr)
-                obj_filter_by = obj_define.pop("filter_by", None)
-                obj_filter_value = obj_define.pop("filter_value", None)
+                ref = obj_define.pop("ref", {})
+                obj_filter_by = ref.pop("field", None)
+                obj_filter_value = ref.pop("value", None)
                 obj = self.__parse(kind, obj_define.pop("spec", {}), obj_filter_by, obj_filter_value, session)
                 spec[attr] = obj
 

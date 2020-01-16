@@ -127,7 +127,7 @@ def quick_login_command(tag):
 
 @cli.command()
 def clean_temp_file():
-    time.sleep(5)
+    time.sleep(2)
     clean_temp_file_core()
 
 

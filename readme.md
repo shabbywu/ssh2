@@ -72,8 +72,9 @@ spec:
     user: str
     name: str | nullable
     auth:
-        filter_by: id/name
-        filter_value: int/str
+        ref:
+            field: id/name
+            value: int/str
         spec:
             name: str | nullable
             type: str
@@ -104,14 +105,16 @@ spec:
                 -   str
                 -   str
     client:
-        filter_by: id/name
-        filter_value: int/str
+        ref:
+            field: id/name
+            value: int/str
         spec:
             user: str
             name: str | nullable
             auth:
-                filter_by: id/name
-                filter_value: int/str
+                ref:
+                    field: id/name
+                    value: int/str
                 spec:
                     name: str | nullable
                     type: str
@@ -119,8 +122,9 @@ spec:
                     expect_for_password: str
                     save_private_key_in_db: bool
     server:
-        filter_by: id/name
-        filter_value: int/str
+        ref:
+            field: id/name
+            value: int/str
         spec:
             name: str
             host: str
