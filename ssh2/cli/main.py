@@ -2,6 +2,7 @@
 import click
 import time
 import yaml
+from pathlib import PosixPath
 from operator import attrgetter, itemgetter
 
 from ssh2.cli.parser import YamlParser
@@ -134,3 +135,13 @@ def clean_temp_file():
 @cli.command()
 def init_db():
     create_dababases()
+
+
+@cli.command()
+def get_wrapper_dot_sh():
+    current = PosixPath(__file__)
+    ssh2_wrapper_dot_sh = current.parent.parent.parent / "ssh2_wrapper.sh"
+    if ssh2_wrapper_dot_sh.exists():
+        print(ssh2_wrapper_dot_sh.absolute())
+    else:
+        raise Exception("ssh2_wrapper.sh does not found!")

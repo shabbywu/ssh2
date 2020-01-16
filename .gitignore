@@ -1,5 +1,4 @@
 build/
-dist/
 ssh2.egg-info/
 .idea/
 *.pyc
