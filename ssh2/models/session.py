@@ -1,29 +1,31 @@
 # -*- coding: utf-8 -*-
 import json
 from typing import List
-from sqlalchemy import Column, Integer, ForeignKey, Sequence, String, Text
+
+from sqlalchemy import Column, ForeignKey, Integer, Sequence, String, Text
 from sqlalchemy.orm import relationship
 
-from ssh2.utils import uuid_str
-from ssh2.models import BaseModel
+from ..models import BaseModel
+from ..utils import uuid_str
 
 
 class Session(BaseModel):
-    __tablename__ = 'session'
+    __tablename__ = "session"
 
     id = Column("id", Integer, Sequence("session_id_seq"), primary_key=True)
     tag = Column("tag", String(16), index=True, unique=True)
     name = Column("name", String(32), unique=True, default=uuid_str)
     plugins = Column("plugings", Text)
 
-    client_config_id = Column(Integer, ForeignKey('client_config.id'))
-    server_config_id = Column(Integer, ForeignKey('server_config.id'))
+    client_config_id = Column(Integer, ForeignKey("client_config.id"))
+    server_config_id = Column(Integer, ForeignKey("server_config.id"))
 
     client = relationship("ClientConfig", back_populates="sessions")
     server = relationship("ServerConfig", back_populates="sessions")
 
     def to_expect_cmds(self) -> str:
         from ssh2.plugins import BasePlugin
+
         plugins: List[dict] = json.loads(self.plugins)
         cmds = ["set timeout 20"]
 
@@ -46,8 +48,11 @@ class Session(BaseModel):
             kind="Session",
             filter_by="id",
             filter_value=self.id,
-            spec=dict(name=self.name,
-                      tag=self.tag,
-                      client=self.client.to_json(),
-                      server=self.server.to_json(),
-                      plugins=plugins))
+            spec=dict(
+                name=self.name,
+                tag=self.tag,
+                client=self.client.to_json(),
+                server=self.server.to_json(),
+                plugins=plugins,
+            ),
+        )

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import Column, Integer, String, Sequence
+from sqlalchemy import Column, Integer, Sequence, String
 from sqlalchemy.orm import relationship
 
-from ssh2.utils import uuid_str
-from ssh2.models import BaseModel
+from ..models import BaseModel
+from ..utils import uuid_str
 
 
 class ServerConfig(BaseModel):
-    __tablename__ = 'server_config'
+    __tablename__ = "server_config"
 
     id = Column("id", Integer, Sequence("server_config_id_seq"), primary_key=True)
     name = Column("name", String(32), unique=True, default=uuid_str)
@@ -24,6 +24,5 @@ class ServerConfig(BaseModel):
             kind="ServerConfig",
             filter_by="id",
             filter_value=self.id,
-            spec=dict(name=self.name,
-                      host=self.host,
-                      port=self.port,))
+            spec=dict(name=self.name, host=self.host, port=self.port,),
+        )

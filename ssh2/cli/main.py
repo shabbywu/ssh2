@@ -1,35 +1,36 @@
 # -*- coding: utf-8 -*-
-import click
 import time
-import yaml
-from pathlib import PosixPath
 from operator import attrgetter, itemgetter
+from pathlib import PosixPath
 
-from ssh2.cli.parser import YamlParser
-from ssh2.utils.tempfile import generate_temp_file, clean_temp_file_core
-from ssh2.models import get_scoped_session, session_scope, create_dababases
-from ssh2.models.auth_method import AuthMethod
-from ssh2.models.client_config import ClientConfig
-from ssh2.models.server_config import ServerConfig
-from ssh2.models.session import Session
+import click
+import yaml
 
+from ..cli.parser import YamlParser
+from ..models import create_dababases, get_scoped_session, session_scope
+from ..models.auth_method import AuthMethod
+from ..models.client_config import ClientConfig
+from ..models.server_config import ServerConfig
+from ..models.session import Session
+from ..utils.tempfile import clean_temp_file_core, generate_temp_file
 
 RESOURCE_CLS_MAPPER = {
-    'ClientConfig': ClientConfig,
-    'AuthMethod': AuthMethod,
-    'ServerConfig': ServerConfig,
-    'Session': Session,
-    'auth': AuthMethod,
-    'client': ClientConfig,
-    'server': ServerConfig,
-    'session': Session
+    "ClientConfig": ClientConfig,
+    "AuthMethod": AuthMethod,
+    "ServerConfig": ServerConfig,
+    "Session": Session,
+    "auth": AuthMethod,
+    "client": ClientConfig,
+    "server": ServerConfig,
+    "session": Session,
 }
 
 
 def all_tag():
     try:
         return list(map(itemgetter(0), get_scoped_session().query(Session.tag)))
-    except:
+    except Exception:
+        pass
         return []
 
 
@@ -46,7 +47,7 @@ def get(resource_type, **options):
     with session_scope() as s:
         resources = s.query(RESOURCE_CLS_MAPPER[resource_type]).all()
 
-    f = str if not options['format'] else attrgetter(options['format'].lstrip("."))
+    f = str if not options["format"] else attrgetter(options["format"].lstrip("."))
     for instance in resources:
         click.echo(f(instance))
 
@@ -74,7 +75,9 @@ def edit(resource_type, id, name):
     with session_scope() as s:
         query = s.query(RESOURCE_CLS_MAPPER[resource_type]).filter_by(**q)
         if query.count() != 1:
-            raise Exception("can not edit multi resource as once, please check the filter condition")
+            raise Exception(
+                "can not edit multi resource as once, please check the filter condition"
+            )
         resource = query.scalar()
         json = resource.to_json()
 
@@ -106,8 +109,10 @@ def delete(resource_type, id, name, force):
     with session_scope() as s:
         query = s.query(RESOURCE_CLS_MAPPER[resource_type]).filter_by(**q)
         if query.count() != 1 and not force:
-            raise Exception("can not delete multi resource as once, "
-                            "please check the filter condition or add `--force` option")
+            raise Exception(
+                "can not delete multi resource as once, "
+                "please check the filter condition or add `--force` option"
+            )
         query.delete()
 
 
@@ -122,8 +127,6 @@ def quick_login_command(tag):
         fh.write(f"\nspawn ssh2 clean-temp-file\n")
         fh.write(cmds)
     click.echo(f"expect -f {path}")
-
-
 
 
 @cli.command()

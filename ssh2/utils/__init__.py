@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import uuid
 import importlib
+import uuid
 
-from ssh2.exceptions import ImportFromStringError
+from ..exceptions import ImportFromStringError
 
 
 def uuid_str():

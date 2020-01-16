@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import Column, Integer, String, UnicodeText, Sequence
+from sqlalchemy import Column, Integer, Sequence, String, UnicodeText
 from sqlalchemy.orm import relationship
 
-from ssh2.utils import uuid_str
-from ssh2.utils.crypto import EncryptHandler, b64encode, b64decode
-from ssh2.constants import AuthMethodType
-from ssh2.models import BaseModel
-
+from ..constants import AuthMethodType
+from ..models import BaseModel
+from ..utils import uuid_str
+from ..utils.crypto import EncryptHandler, b64decode, b64encode
 
 encrypt_handler = EncryptHandler()
 
 
 class AuthMethod(BaseModel):
-    __tablename__ = 'auth_method'
+    __tablename__ = "auth_method"
 
     id = Column("id", Integer, Sequence("auth_method_id_seq"), primary_key=True)
     name = Column("name", String(32), unique=True, default=uuid_str)
@@ -27,13 +26,18 @@ class AuthMethod(BaseModel):
             kind="AuthMethod",
             filter_by="id",
             filter_value=self.id,
-            spec=dict(name=self.name,
-                      type=self.type,
-                      content=b64encode(self.content_decrypted),
-                      expect_for_password=self.expect_for_password))
+            spec=dict(
+                name=self.name,
+                type=self.type,
+                content=b64encode(self.content_decrypted),
+                expect_for_password=self.expect_for_password,
+            ),
+        )
 
     @classmethod
-    def from_publishkey_file(cls, file_path: str, save_private_key_in_db: bool, name=None):
+    def from_publishkey_file(
+        cls, file_path: str, save_private_key_in_db: bool, name=None
+    ):
         if save_private_key_in_db:
             with open(file_path, mode="r") as fh:
                 content = b64encode("".join(fh.readlines()))
@@ -46,19 +50,29 @@ class AuthMethod(BaseModel):
     @classmethod
     def from_publishkey_content(cls, content, name=None):
         content = b64decode(content)
-        return cls(type=AuthMethodType.PUBLISH_KEY_CONTENT.value, content=encrypt_handler.encrypt(b64encode(content)), name=name)
+        return cls(
+            type=AuthMethodType.PUBLISH_KEY_CONTENT.value,
+            content=encrypt_handler.encrypt(b64encode(content)),
+            name=name,
+        )
 
     @classmethod
-    def from_password(cls, password: str, expect_for_password='', name=None):
-        return cls(type=AuthMethodType.PASSWORD.value,
-                   content=encrypt_handler.encrypt(b64encode(password)),
-                   expect_for_password=expect_for_password, name=name)
+    def from_password(cls, password: str, expect_for_password="", name=None):
+        return cls(
+            type=AuthMethodType.PASSWORD.value,
+            content=encrypt_handler.encrypt(b64encode(password)),
+            expect_for_password=expect_for_password,
+            name=name,
+        )
 
     @classmethod
-    def interactive(cls, expect_for_password='', name=None):
-        return cls(type=AuthMethodType.INTERACTIVE_PASSWORD.value,
-                   content=encrypt_handler.encrypt(""),
-                   expect_for_password=expect_for_password, name=name)
+    def interactive(cls, expect_for_password="", name=None):
+        return cls(
+            type=AuthMethodType.INTERACTIVE_PASSWORD.value,
+            content=encrypt_handler.encrypt(""),
+            expect_for_password=expect_for_password,
+            name=name,
+        )
 
     @property
     def content_decrypted(self) -> str:

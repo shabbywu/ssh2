@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 import tempfile
 from pathlib import Path
-import logging
 
-from ssh2.conf import TEMP_FILE_SUFFIX, TEMP_FILE_PREFIX, TEMP_DIR
-
+from ..conf import TEMP_DIR, TEMP_FILE_PREFIX, TEMP_FILE_SUFFIX
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +22,10 @@ def generate_temp_file() -> Path:
     if not tmp_dir.exists() or not tmp_dir.is_dir():
         tmp_dir.mkdir()
 
-    path = Path(tempfile.mkstemp(prefix=TEMP_FILE_PREFIX, suffix=TEMP_FILE_SUFFIX, dir=TEMP_DIR)[1])
-    logger.debug('Generating temp path: %s', path)
+    path = Path(
+        tempfile.mkstemp(
+            prefix=TEMP_FILE_PREFIX, suffix=TEMP_FILE_SUFFIX, dir=TEMP_DIR
+        )[1]
+    )
+    logger.debug("Generating temp path: %s", path)
     return path

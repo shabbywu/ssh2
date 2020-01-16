@@ -39,65 +39,71 @@ source $(ssh2 get-wrapper-dot-sh)
 
 ```
 5. 使用(demo)
-```bash
-cat > demo.yal <<< EOF
+```yml
+# file `demo.yml`
 ## Create with a nested object
 kind: Session
 spec:
-    tag: str
-    name: str
+    tag: session-1
+    name: unique_name_to_mark_this_session_1
     plugins:
         -   kind:   SSH_LOGIN
             args:
     client:
         spec:
             user: username_whose_login_to_server
-            name: unique_name_to_mark_this_client
+            name: unique_name_to_mark_this_client_1
             auth:
                 spec:
-                    name: unique_name_to_mark_this_auth
+                    name: unique_name_to_mark_this_auth_1
                     type: PASSWORD
                     content: your_password
                     expect_for_password: str
     server:
         spec:
-            name: unique_name_to_mark_this_server
+            name: unique_name_to_mark_this_server_1
             host: host_of_server
             port: port_of_server
 ---
 # Create with multi object
 kind: ClientConfig
 spec:
-  name: unique_name_to_mark_this_client
+  name: unique_name_to_mark_this_client_2
   user: username_whose_login_to_server
   auth:
     spec:
-      name: unique_name_to_mark_this_auth
+      name: unique_name_to_mark_this_auth_2
       type: INTERACTIVE_PASSWORD
       content: 'a placeholder'
 ---
 kind: ServerConfig
 spec:
-  name: unique_name_to_mark_this_server
+  name: unique_name_to_mark_this_server_2
   host: host_of_server
   port: port_of_server
 ---
 kind: Session
 spec:
-    tag: mnet2
-    name: 腾讯-跳板机
+    tag: session-2
+    name: unique_name_to_mark_this_session_2
     plugins:
         -   kind:   SSH_WETERM
             args:
     client:
       ref:
         field: name
-        value: unique_name_to_mark_this_client
+        value: unique_name_to_mark_this_client_2
     server:
       ref:
         field: name
-        value: unique_name_to_mark_this_server
-EOF
+        value: unique_name_to_mark_this_server_2
+```
+```bash
+ssh2 create -f demo.yml
+go2s
+# show `session-1 session-2`
+go2s session-1
+# try login to session-1
 ```
 ## 附录
 ### 数据结构
