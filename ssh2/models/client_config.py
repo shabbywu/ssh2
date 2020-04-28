@@ -2,8 +2,8 @@
 from sqlalchemy import Column, ForeignKey, Integer, Sequence, String
 from sqlalchemy.orm import relationship
 
-from ..models import BaseModel
 from ..utils import uuid_str
+from .base import BaseModel
 
 
 class ClientConfig(BaseModel):

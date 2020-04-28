@@ -3,9 +3,9 @@ from sqlalchemy import Column, Integer, Sequence, String, UnicodeText
 from sqlalchemy.orm import relationship
 
 from ..constants import AuthMethodType
-from ..models import BaseModel
 from ..utils import uuid_str
 from ..utils.crypto import EncryptHandler, b64decode, b64encode
+from .base import BaseModel
 
 encrypt_handler = EncryptHandler()
 
@@ -35,9 +35,7 @@ class AuthMethod(BaseModel):
         )
 
     @classmethod
-    def from_publishkey_file(
-        cls, file_path: str, save_private_key_in_db: bool, name=None
-    ):
+    def from_publishkey_file(cls, file_path: str, save_private_key_in_db: bool, name=None):
         if save_private_key_in_db:
             with open(file_path, mode="r") as fh:
                 content = b64encode("".join(fh.readlines()))
