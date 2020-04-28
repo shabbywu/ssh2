@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+from textwrap import dedent
 from typing import List
 
 from sqlalchemy import Column, ForeignKey, Integer, Sequence, String, Text
@@ -27,7 +28,17 @@ class Session(BaseModel):
         from ssh2.plugins import BasePlugin
 
         plugins: List[dict] = json.loads(self.plugins)
-        cmds = ["set timeout 20"]
+        cmds = [
+            "set timeout 20",
+            dedent(
+                """
+                trap {
+                    set rows [stty rows]
+                    set cols [stty columns]
+                    stty rows $rows columns $cols < $spawn_out(slave,name)
+                } WINCH"""
+            ),
+        ]
 
         for plugin in plugins:
             plugin = BasePlugin.from_dict(plugin)

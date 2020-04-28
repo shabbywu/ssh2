@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import pickle
-from ssh2.models import AuthMethod, ClientConfig, ServerConfig, Session, session_scope, get_scoped_session
+
+from ssh2.models import AuthMethod, ClientConfig, ServerConfig, Session, get_scoped_session, session_scope
 
 
 class TestModels:
@@ -14,19 +15,21 @@ class TestModels:
         assert session.query(AuthMethod).count() == 1
         auth2 = session.query(AuthMethod).scalar()
         assert auth2 == auth
-        assert auth2.content != 'test'
-        assert auth2.content_decrypted == 'test'
+        assert auth2.content != "test"
+        assert auth2.content_decrypted == "test"
 
     def test_client_config(self):
         session = get_scoped_session()
         assert session.query(ClientConfig).count() == 0
         with session_scope() as s:
-            client_config = ClientConfig(user="somebody-1",
-                                         auth=AuthMethod.from_password("test"),
-                                         sessions=[
-                                             Session(plugins=b"test", server=ServerConfig(host="127.0.0.1", port=22)),
-                                             Session(plugins=b"test", server=ServerConfig(host="127.0.0.1", port=23)),
-                                         ])
+            client_config = ClientConfig(
+                user="somebody-1",
+                auth=AuthMethod.from_password("test"),
+                sessions=[
+                    Session(plugins=b"test", server=ServerConfig(host="127.0.0.1", port=22)),
+                    Session(plugins=b"test", server=ServerConfig(host="127.0.0.1", port=23)),
+                ],
+            )
             s.add(client_config)
 
         assert session.query(ClientConfig).count() == 1
@@ -51,9 +54,11 @@ class TestModels:
         session = get_scoped_session()
         assert session.query(Session).count() == 0
         with session_scope() as s:
-            session_obj = Session(plugins=pickle.dumps(["test"]), server=ServerConfig(host="127.0.0.1", port=22),
-                                  client=ClientConfig(user="somebody-1",
-                                                      auth=AuthMethod.from_password("test")))
+            session_obj = Session(
+                plugins=pickle.dumps(["test"]),
+                server=ServerConfig(host="127.0.0.1", port=22),
+                client=ClientConfig(user="somebody-1", auth=AuthMethod.from_password("test")),
+            )
             s.add(session_obj)
 
         assert session.query(ClientConfig).count() == 1

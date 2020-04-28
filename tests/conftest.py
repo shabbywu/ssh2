@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from unittest import mock
+
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.orm import sessionmaker, scoped_session
-
-from ssh2.models import get_engine, create_dababases
+from sqlalchemy.orm import scoped_session, sessionmaker
+from ssh2.models import create_dababases, get_engine
 
 
 def pytest_addoption(parser):
@@ -14,8 +14,7 @@ def pytest_addoption(parser):
         action="store_true",
         dest="reuse_db",
         default=False,
-        help="Re-use the testing database if it already exists, "
-        "and do not remove it when the test finishes.",
+        help="Re-use the testing database if it already exists, " "and do not remove it when the test finishes.",
     )
 
 
@@ -60,7 +59,7 @@ def sqlalchemy_transaction(request):
         session.begin_nested()
 
         # Each time the SAVEPOINT for the nested transaction ends, reopen it
-        @sa.event.listens_for(session, 'after_transaction_end')
+        @sa.event.listens_for(session, "after_transaction_end")
         def restart_savepoint(session, trans):
             if trans.nested and not trans._parent.nested:
                 # ensure that state is expired the way
@@ -76,8 +75,8 @@ def sqlalchemy_transaction(request):
         # add it back into the session (this allows us to see changes made to objects
         # in the context of a test, even when the change was made elsewhere in
         # the codebase)
-        @sa.event.listens_for(session, 'persistent_to_detached')
-        @sa.event.listens_for(session, 'deleted_to_detached')
+        @sa.event.listens_for(session, "persistent_to_detached")
+        @sa.event.listens_for(session, "deleted_to_detached")
         def rehydrate_object(session, obj):
             session.add(obj)
 
@@ -89,6 +88,7 @@ def sqlalchemy_transaction(request):
             # Rollback the transaction and return the connection to the pool
             transaction.force_rollback()
             connection.force_close()
+
         return session
 
     with mock.patch("ssh2.models.sessionmaker") as _sessionmaker:

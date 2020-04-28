@@ -36,7 +36,6 @@ pipx install ssh2-0.1.0.tar.gz
 ## 加载 ssh2_wrapper.sh 内置的指令
 bash
 source $(ssh2 get-wrapper-dot-sh)
-
 ```
 5. 使用(demo)
 ```yml

@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
-import six
-import os
-import getpass
 import base64
+import getpass
+import os
+from decimal import Decimal
 from typing import Union
 
-from decimal import Decimal
+import six
 from cryptography.fernet import Fernet
 
-
 _PROTECTED_TYPES = (
-    type(None), int, float, Decimal,
+    type(None),
+    int,
+    float,
+    Decimal,
 )
 
 
@@ -23,7 +25,7 @@ def is_protected_type(obj):
     return isinstance(obj, _PROTECTED_TYPES)
 
 
-def force_text(s, encoding='utf-8', errors='strict'):
+def force_text(s, encoding="utf-8", errors="strict"):
     """
     Similar to django's force_text function
     """
@@ -37,7 +39,7 @@ def force_text(s, encoding='utf-8', errors='strict'):
                     s = six.text_type(s, encoding, errors)
                 else:
                     s = six.text_type(s)
-            elif hasattr(s, '__unicode__'):
+            elif hasattr(s, "__unicode__"):
                 s = six.text_type(s)
             else:
                 s = six.text_type(bytes(s), encoding, errors)
@@ -51,7 +53,7 @@ def force_text(s, encoding='utf-8', errors='strict'):
     return s
 
 
-def force_bytes(s, encoding='utf-8', strings_only=False, errors='strict'):
+def force_bytes(s, encoding="utf-8", strings_only=False, errors="strict"):
     """
     Similar to smart_bytes, except that lazy instances are resolved to
     strings, rather than kept as lazy objects.
@@ -60,10 +62,10 @@ def force_bytes(s, encoding='utf-8', strings_only=False, errors='strict'):
     """
     # Handle the common case first for performance reasons.
     if isinstance(s, bytes):
-        if encoding == 'utf-8':
+        if encoding == "utf-8":
             return s
         else:
-            return s.decode('utf-8', errors).encode(encoding, errors)
+            return s.decode("utf-8", errors).encode(encoding, errors)
     if strings_only and is_protected_type(s):
         return s
     if isinstance(s, memoryview):
@@ -74,13 +76,13 @@ def force_bytes(s, encoding='utf-8', strings_only=False, errors='strict'):
 
 def get_default_secret_key(generator=getpass.getuser):
     try:
-        return os.environ['PY_SSH2_DEFAULT_SECRET_KEY']
+        return os.environ["PY_SSH2_DEFAULT_SECRET_KEY"]
     except KeyError:
         key = generator()
         targetlen = 32
         if len(key) == 0:
             raise
-        key = (key * (targetlen//len(key) + 1))[:32]
+        key = (key * (targetlen // len(key) + 1))[:32]
         return base64.urlsafe_b64encode(key.encode())
 
 
@@ -123,7 +125,7 @@ class EncryptHandler:
             if not cls.contain_header(text):
                 return text
 
-            return text[len(cls.HEADER):]
+            return text[len(cls.HEADER) :]
 
         @classmethod
         def contain_header(cls, text: str) -> bool:

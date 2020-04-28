@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
-from typing import Union
 from contextlib import contextmanager
+from typing import Union
 
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session, Session
-
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session as DBSession
+from sqlalchemy.orm import scoped_session, sessionmaker
 from ssh2.conf import DEFAULT_DB, ECHO_SQL
+from ssh2.models.auth_method import AuthMethod
+from ssh2.models.client_config import ClientConfig
+from ssh2.models.server_config import ServerConfig
+from ssh2.models.session import Session
 
 _engine = None
 BaseModel = declarative_base()
 
 
-def get_scoped_session() -> Union[Session, scoped_session]:
+def get_scoped_session() -> Union[DBSession, scoped_session]:
     return scoped_session(sessionmaker(bind=get_engine(), expire_on_commit=False))
 
 
@@ -42,10 +46,11 @@ def create_dababases():
     BaseModel.metadata.create_all(get_engine())
 
 
-from ssh2.models.auth_method import AuthMethod
-from ssh2.models.client_config import ClientConfig
-from ssh2.models.server_config import ServerConfig
-from ssh2.models.session import Session
-
-
-__all__ = [AuthMethod, ClientConfig, ServerConfig, Session, get_scoped_session, session_scope]
+__all__ = [
+    AuthMethod,
+    ClientConfig,
+    ServerConfig,
+    Session,
+    get_scoped_session,
+    session_scope,
+]

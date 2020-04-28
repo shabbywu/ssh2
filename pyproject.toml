@@ -37,3 +37,6 @@ ioa = ["ssh2-ioa"]
 
 [tool.poetry.scripts]
 ssh2 = 'ssh2.cli.main:cli'
+
+[tool.black]
+line-length = 119

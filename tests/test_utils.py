@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
-from unittest import mock
 import base64
-from cryptography.fernet import Fernet
+from unittest import mock
 
-from ssh2.utils.crypto import get_default_secret_key, EncryptHandler
+from cryptography.fernet import Fernet
+from ssh2.utils.crypto import EncryptHandler, get_default_secret_key
 
 
 class TestUtils:
     def test_get_default_secret_key_with_envrion(self):
         expect_result = Fernet.generate_key()
 
-        with mock.patch('ssh2.utils.crypto.os') as os:
+        with mock.patch("ssh2.utils.crypto.os") as os:
             os.environ = dict(PY_SSH2_DEFAULT_SECRET_KEY=expect_result)
             assert get_default_secret_key() == expect_result
 
     def test_get_default_secret_key_with_default(self):
-        expect_result = base64.urlsafe_b64encode(('test' * 8).encode())
-        assert get_default_secret_key(lambda: 'test') == expect_result
+        expect_result = base64.urlsafe_b64encode(("test" * 8).encode())
+        assert get_default_secret_key(lambda: "test") == expect_result
 
 
 class TestEncryptHandler:
