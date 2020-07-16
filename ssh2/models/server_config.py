@@ -22,7 +22,6 @@ class ServerConfig(BaseModel):
     def to_json(self):
         return dict(
             kind="ServerConfig",
-            filter_by="id",
-            filter_value=self.id,
+            ref=dict(field="id", value=self.id,),
             spec=dict(name=self.name, host=self.host, port=self.port,),
         )

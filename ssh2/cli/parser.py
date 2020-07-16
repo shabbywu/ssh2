@@ -29,11 +29,11 @@ class YamlParser:
         res = []
         for document in self.documents:
             with session_scope() as session:
-                res.append(self._parse(document, session=session))
+                res.append(self._parse(document, db=session))
 
         return res
 
-    def _parse(self, document, session=None):
+    def _parse(self, document, db=None):
         kind = document.pop("kind")
         spec = document.pop("spec", {})
         ref = document.pop("ref", {})
@@ -42,15 +42,9 @@ class YamlParser:
         if kind not in KindMapper:
             raise NotImplementedError(kind)
         cls = KindMapper[kind]
-        return self.__parse(
-            cls,
-            spec,
-            filter_by=obj_filter_by,
-            filter_value=obj_filter_value,
-            session=session,
-        )
+        return self.__parse(cls, spec, filter_by=obj_filter_by, filter_value=obj_filter_value, db=db,)
 
-    def __parse(self, cls, spec=None, filter_by=None, filter_value=None, session=None):
+    def __parse(self, cls, spec=None, filter_by=None, filter_value=None, db=None):
         instance = None
         for attr, kind in AttrKindMapper.items():
             if attr in spec:
@@ -59,27 +53,25 @@ class YamlParser:
                 obj_filter_by = ref.pop("field", None)
                 obj_filter_value = ref.pop("value", None)
                 obj = self.__parse(
-                    kind,
-                    obj_define.pop("spec", {}),
-                    obj_filter_by,
-                    obj_filter_value,
-                    session,
+                    cls=kind,
+                    spec=obj_define.pop("spec", {}),
+                    filter_by=obj_filter_by,
+                    filter_value=obj_filter_value,
+                    db=db,
                 )
                 spec[attr] = obj
 
         if filter_by and filter_value:
-            instance = self.try_get_instance(session, cls, filter_by, filter_value)
+            instance = self.try_get_instance(db, cls, filter_by, filter_value)
 
         try:
-            instance, created = self._CREATE_INSTANCE_HANDLER[cls].__get__(self)(
-                spec, instance
-            )
+            instance, created = self._CREATE_INSTANCE_HANDLER[cls].__get__(self)(spec, instance)
         except AttrNotFound as e:
             if instance is None:
                 raise e
         else:
             if created:
-                session.add(instance)
+                db.add(instance)
 
         return instance
 
@@ -89,17 +81,13 @@ class YamlParser:
         type = AuthMethodType(cls.get_attr_from_spec(spec, "type"))
         content = cls.get_attr_from_spec(spec, "content")
         expect_for_password = cls.get_attr_from_spec(spec, "expect_for_password", None)
-        save_private_key_in_db = cls.get_attr_from_spec(
-            spec, "save_private_key_in_db", False
-        )
+        save_private_key_in_db = cls.get_attr_from_spec(spec, "save_private_key_in_db", False)
 
         if len(spec) != 0:
             raise AttrNotDefind(spec)
 
         if type == AuthMethodType.PASSWORD:
-            new_instance = AuthMethod.from_password(
-                content, expect_for_password=expect_for_password, name=name
-            )
+            new_instance = AuthMethod.from_password(content, expect_for_password=expect_for_password, name=name)
         elif type == AuthMethodType.PUBLISH_KEY_PATH:
             new_instance = AuthMethod.from_publishkey_file(
                 content, save_private_key_in_db=save_private_key_in_db, name=name
@@ -107,15 +95,13 @@ class YamlParser:
         elif type == AuthMethodType.PUBLISH_KEY_CONTENT:
             new_instance = AuthMethod.from_publishkey_content(content, name=name)
         elif type == AuthMethodType.INTERACTIVE_PASSWORD:
-            new_instance = AuthMethod.interactive(
-                expect_for_password=expect_for_password, name=name
-            )
+            new_instance = AuthMethod.interactive(expect_for_password=expect_for_password, name=name)
         else:
             raise NotImplementedError
 
         if isinstance(instance, AuthMethod):
-            del new_instance._sa_instance_state
-            instance.__dict__.update(new_instance.__dict__)
+            for key in ["name", "type", "content", "expect_for_password"]:
+                setattr(instance, key, getattr(new_instance, key))
             return instance, False
         return new_instance, True
 
@@ -183,9 +169,9 @@ class YamlParser:
             return default
 
     @staticmethod
-    def try_get_instance(session, model, filter_by, filter_value):
+    def try_get_instance(db, model, filter_by, filter_value):
         try:
-            return session.query(model).filter_by(**{filter_by: filter_value}).scalar()
+            return db.query(model).filter_by(**{filter_by: filter_value}).scalar()
         except Exception:
             return None
 

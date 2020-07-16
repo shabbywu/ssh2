@@ -57,8 +57,7 @@ class Session(BaseModel):
 
         return dict(
             kind="Session",
-            filter_by="id",
-            filter_value=self.id,
+            ref=dict(field="id", value=self.id,),
             spec=dict(
                 name=self.name,
                 tag=self.tag,

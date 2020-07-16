@@ -24,7 +24,6 @@ class ClientConfig(BaseModel):
     def to_json(self):
         return dict(
             kind="ClientConfig",
-            filter_by="id",
-            filter_value=self.id,
+            ref=dict(field="id", value=self.id,),
             spec=dict(name=self.name, user=self.user, auth=self.auth.to_json(),),
         )

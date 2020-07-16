@@ -182,8 +182,8 @@ class TestYamlParser:
         assert s.query(Session).count() == 1
 
     def test_update_by_parser(self):
-        s = get_scoped_session()
-        assert s.query(AuthMethod).count() == 0
+        db = get_scoped_session()
+        assert db.query(AuthMethod).count() == 0
 
         temppath = generate_temp_file()
         with open(temppath, "w") as fh:
@@ -226,12 +226,12 @@ class TestYamlParser:
 
         parser = YamlParser(document)
         parser.parse()
-        session = s.query(Session).scalar()
+        session = db.query(Session).scalar()
 
-        assert s.query(ServerConfig).count() == 1
-        assert s.query(ClientConfig).count() == 1
-        assert s.query(AuthMethod).count() == 1
-        assert s.query(Session).count() == 1
+        assert db.query(ServerConfig).count() == 1
+        assert db.query(ClientConfig).count() == 1
+        assert db.query(AuthMethod).count() == 1
+        assert db.query(Session).count() == 1
         assert session.name == "str"
         assert session.tag == "str"
 
@@ -240,8 +240,8 @@ class TestYamlParser:
         json["spec"]["tag"] = "标签"
 
         YamlParser(yaml.dump(json, allow_unicode=True)).parse()
-        session = s.query(Session).scalar()
+        session = db.query(Session).scalar()
 
-        assert s.query(Session).count() == 1
+        assert db.query(Session).count() == 1
         assert session.name == "名字"
         assert session.tag == "标签"

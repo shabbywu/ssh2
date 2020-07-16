@@ -24,5 +24,5 @@ class TestSshBackend:
         session_obj: Session = session.query(Session).scalar()
         assert (
             session_obj.to_expect_cmds()
-            == 'set timeout 20\nspawn ssh -p 22 somebody-1@127.0.0.1\nexpect "password:"\nsend "test\r"\ninteract'
+            == 'set timeout 20\n\ntrap {\n    set rows [stty rows]\n    set cols [stty columns]\n    stty rows $rows columns $cols < $spawn_out(slave,name)\n} WINCH\nspawn ssh -p 22 somebody-1@127.0.0.1\nexpect "password:"\nsend "test\r"\ninteract'
         )
