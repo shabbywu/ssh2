@@ -29,7 +29,6 @@ def all_tag():
     try:
         return list(map(itemgetter(0), get_scoped_session().query(Session.tag)))
     except Exception:
-        pass
         return []
 
 
