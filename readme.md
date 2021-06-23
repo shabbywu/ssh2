@@ -29,9 +29,9 @@ p.s. 推荐使用 [pipx](https://pipxproject.github.io/pipx/) 管理基于 pip �
 # 假设你刚执行 poetry build
 cd dist
 ## 简单使用
-pip install ssh2-0.1.0.tar.gz
+pip install ssh2-0.1.1.tar.gz
 ## 使用 pipx
-pipx install ssh2-0.1.0.tar.gz
+pipx install ssh2-0.1.1.tar.gz
 
 ## 加载 ssh2_wrapper.sh 内置的指令
 bash
