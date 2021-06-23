@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import time
 from operator import attrgetter, itemgetter
-from pathlib import PosixPath
+from pathlib import Path
 
 import click
 import yaml
@@ -138,9 +138,14 @@ def init_db():
 
 @cli.command()
 def get_wrapper_dot_sh():
-    current = PosixPath(__file__)
+    current = Path(__file__)
     ssh2_wrapper_dot_sh = current.parent.parent.parent / "ssh2_wrapper.sh"
     if ssh2_wrapper_dot_sh.exists():
         print(ssh2_wrapper_dot_sh.absolute())
     else:
         raise Exception("ssh2_wrapper.sh does not found!")
+
+
+@cli.command()
+def ui():
+    pass
