@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Column, ForeignKey, Integer, Sequence, String
 from sqlalchemy.orm import relationship
+from ssh2.models.base import BaseModel
+from ssh2.utils import uuid_str
 
-from ..utils import uuid_str
-from .base import BaseModel
+if TYPE_CHECKING:
+    from ssh2.models import AuthMethod
 
 
 class ClientConfig(BaseModel):
@@ -15,7 +19,7 @@ class ClientConfig(BaseModel):
     user = Column("user", String)
     auth_method_id = Column(Integer, ForeignKey("auth_method.id"))
 
-    auth = relationship("AuthMethod", back_populates="configs")
+    auth: 'AuthMethod' = relationship("AuthMethod", back_populates="configs")
     sessions = relationship("Session", back_populates="client")
 
     def __str__(self):

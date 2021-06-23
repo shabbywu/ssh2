@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import Column, Integer, Sequence, String, UnicodeText
 from sqlalchemy.orm import relationship
-
-from ..constants import AuthMethodType
-from ..utils import uuid_str
-from ..utils.crypto import EncryptHandler, b64decode, b64encode
-from .base import BaseModel
+from ssh2.constants import AuthMethodType
+from ssh2.models.base import BaseModel
+from ssh2.utils import uuid_str
+from ssh2.utils.crypto import EncryptHandler, b64decode, b64encode
 
 encrypt_handler = EncryptHandler()
 
@@ -31,7 +30,10 @@ class AuthMethod(BaseModel):
             spec=dict(
                 name=self.name,
                 type=self.type,
-                content=b64encode(self.content_decrypted),
+                # 增加一层 b64encode
+                content=b64encode(self.content_decrypted)
+                if self.type == AuthMethodType.PUBLISH_KEY_CONTENT
+                else self.content_decrypted,
                 expect_for_password=self.expect_for_password,
             ),
         )
@@ -40,19 +42,18 @@ class AuthMethod(BaseModel):
     def from_publishkey_file(cls, file_path: str, save_private_key_in_db: bool, name=None):
         if save_private_key_in_db:
             with open(file_path, mode="r") as fh:
-                content = b64encode("".join(fh.readlines()))
+                content = "".join(fh.readlines())
                 type = AuthMethodType.PUBLISH_KEY_CONTENT.value
         else:
-            content = b64encode(file_path)
+            content = file_path
             type = AuthMethodType.PUBLISH_KEY_PATH.value
-        return cls(type=type, content=encrypt_handler.encrypt(content), name=name)
+        return cls(type=type, content=encrypt_handler.encrypt(b64encode(content)), name=name)
 
     @classmethod
     def from_publishkey_content(cls, content, name=None):
-        content = b64decode(content)
         return cls(
             type=AuthMethodType.PUBLISH_KEY_CONTENT.value,
-            content=encrypt_handler.encrypt(b64encode(content)),
+            content=encrypt_handler.encrypt(content),
             name=name,
         )
 

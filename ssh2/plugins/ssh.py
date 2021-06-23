@@ -2,12 +2,9 @@
 import os
 import stat
 
-from ..constants import AuthMethodType, PluginType
-from ..models import Session
-from ..models.auth_method import AuthMethod
-from ..models.client_config import ClientConfig
-from ..models.server_config import ServerConfig
-from ..plugins import BaseLoginPlugin
+from ssh2.constants import AuthMethodType, PluginType
+from ssh2.models import AuthMethod, ClientConfig, ServerConfig, Session
+from ssh2.plugins import BaseLoginPlugin
 
 
 @PluginType.register

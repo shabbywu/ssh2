@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import List
 
-from ..constants import PluginType
-from ..models import Session
-from ..plugins import BasePlugin
+from ssh2.constants import PluginType
+from ssh2.models import Session
+from ssh2.plugins import BasePlugin
 
 
 @PluginType.register

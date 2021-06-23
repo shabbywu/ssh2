@@ -5,14 +5,13 @@ from pathlib import PosixPath
 
 import click
 import yaml
-
-from ..cli.parser import YamlParser
-from ..models import create_dababases, get_scoped_session, session_scope
-from ..models.auth_method import AuthMethod
-from ..models.client_config import ClientConfig
-from ..models.server_config import ServerConfig
-from ..models.session import Session
-from ..utils.tempfile import clean_temp_file_core, generate_temp_file
+from ssh2.cli.parser import YamlParser
+from ssh2.models import create_dababases, get_scoped_session, session_scope
+from ssh2.models.auth_method import AuthMethod
+from ssh2.models.client_config import ClientConfig
+from ssh2.models.server_config import ServerConfig
+from ssh2.models.session import Session
+from ssh2.utils.tempfile import clean_temp_file_core, generate_temp_file
 
 RESOURCE_CLS_MAPPER = {
     "ClientConfig": ClientConfig,

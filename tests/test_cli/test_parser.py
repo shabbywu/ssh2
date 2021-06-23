@@ -34,7 +34,7 @@ class TestYamlParser:
         spec = dict(
             name="test",
             type="PUBLISH_KEY_PATH",
-            content=temppath.absolute(),
+            content=str(temppath.absolute()),
             save_private_key_in_db=True,
         )
         instance, _ = YamlParser.parse_auth_method(spec)
@@ -119,12 +119,12 @@ class TestYamlParser:
         assert session.query(AuthMethod).count() == 0
 
         document = dedent(
-            """
+            f"""
         kind: AuthMethod
         spec:
             name: str
             type: PASSWORD
-            content: password
+            content: {"password"}
             expect_for_password: test
         """
         )

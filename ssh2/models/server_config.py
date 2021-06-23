@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import Column, Integer, Sequence, String
 from sqlalchemy.orm import relationship
-
-from ..utils import uuid_str
-from .base import BaseModel
+from ssh2.models.base import BaseModel
+from ssh2.utils import uuid_str
 
 
 class ServerConfig(BaseModel):

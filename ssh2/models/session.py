@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 import json
 from textwrap import dedent
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import Column, ForeignKey, Integer, Sequence, String, Text
 from sqlalchemy.orm import relationship
+from ssh2.models.base import BaseModel
+from ssh2.utils import uuid_str
 
-from ..utils import uuid_str
-from .base import BaseModel
+if TYPE_CHECKING:
+    from ssh2.models import ClientConfig, ServerConfig
 
 
 class Session(BaseModel):
@@ -21,8 +23,8 @@ class Session(BaseModel):
     client_config_id = Column(Integer, ForeignKey("client_config.id"))
     server_config_id = Column(Integer, ForeignKey("server_config.id"))
 
-    client = relationship("ClientConfig", back_populates="sessions")
-    server = relationship("ServerConfig", back_populates="sessions")
+    client: 'ClientConfig' = relationship("ClientConfig", back_populates="sessions")
+    server: 'ServerConfig' = relationship("ServerConfig", back_populates="sessions")
 
     def to_expect_cmds(self) -> str:
         from ssh2.plugins import BasePlugin
