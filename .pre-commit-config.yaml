@@ -4,17 +4,25 @@ repos:
   rev: 4.3.21-2
   hooks:
   - id: isort
-    args: [--settings-path=./.isort.cfg]
+    additional_dependencies: ["toml"]
+
 - repo: https://github.com/psf/black
-  rev: 19.10b0
+  rev: 20.8b1
   hooks:
   - id: black
     args: [--config=./pyproject.toml]
-    exclude: >
-      (?x)^(
-          node_modules/.*
-      )$
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.4.0
+
+- repo: https://gitlab.com/retnikt/flake9
+  rev: 3.8.3.post1
   hooks:
   - id: flake8
+    additional_dependencies: ['toml', 'flake8-comprehensions', 'flake8-rst-docstrings']
+
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: 'v0.770'
+  hooks:
+  - id: mypy
+    exclude: >
+      (?x)^(
+        .*/migrations/.*
+      )$

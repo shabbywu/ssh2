@@ -31,7 +31,12 @@ class TestYamlParser:
         with open(temppath, "w") as fh:
             fh.write("test\n")
 
-        spec = dict(name="test", type="PUBLISH_KEY_PATH", content=temppath.absolute(), save_private_key_in_db=True,)
+        spec = dict(
+            name="test",
+            type="PUBLISH_KEY_PATH",
+            content=temppath.absolute(),
+            save_private_key_in_db=True,
+        )
         instance, _ = YamlParser.parse_auth_method(spec)
         session.add(instance)
         session.commit()
@@ -95,7 +100,10 @@ class TestYamlParser:
             tag="test",
             client=client,
             server=server,
-            plugins=[dict(kind="SSH_LOGIN", args=dict()), dict(kind="EXPECT", args=dict(raw=["test"])),],
+            plugins=[
+                dict(kind="SSH_LOGIN", args=dict()),
+                dict(kind="EXPECT", args=dict(raw=["test"])),
+            ],
         )
         session, _ = YamlParser.parse_session(session_spec)
         s.add(session)
@@ -174,7 +182,7 @@ class TestYamlParser:
                     port: 103
         """
         )
-        session = YamlParser(document).parse()[0]
+        YamlParser(document).parse()[0]
 
         assert s.query(ServerConfig).count() == 1
         assert s.query(ClientConfig).count() == 1

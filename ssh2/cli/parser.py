@@ -2,14 +2,13 @@
 import json
 
 import yaml
-
-from ..constants import AuthMethodType
-from ..exceptions import AttrNotDefind, AttrNotFound
-from ..models import session_scope
-from ..models.auth_method import AuthMethod
-from ..models.client_config import ClientConfig
-from ..models.server_config import ServerConfig
-from ..models.session import Session
+from ssh2.constants import AuthMethodType
+from ssh2.exceptions import AttrNotDefind, AttrNotFound
+from ssh2.models import session_scope
+from ssh2.models.auth_method import AuthMethod
+from ssh2.models.client_config import ClientConfig
+from ssh2.models.server_config import ServerConfig
+from ssh2.models.session import Session
 
 KindMapper = {
     "ClientConfig": ClientConfig,
@@ -42,7 +41,13 @@ class YamlParser:
         if kind not in KindMapper:
             raise NotImplementedError(kind)
         cls = KindMapper[kind]
-        return self.__parse(cls, spec, filter_by=obj_filter_by, filter_value=obj_filter_value, db=db,)
+        return self.__parse(
+            cls,
+            spec,
+            filter_by=obj_filter_by,
+            filter_value=obj_filter_value,
+            db=db,
+        )
 
     def __parse(self, cls, spec=None, filter_by=None, filter_value=None, db=None):
         instance = None

@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
+from typing import ClassVar, Optional
 
-from .. import conf
-from ..constants import AuthMethodType, PluginType
-from ..exceptions import ImportFromStringError
-from ..models.auth_method import AuthMethod
-from ..models.session import Session
-from ..utils import import_from_string
-from ..utils.tempfile import generate_temp_file
+from ssh2 import conf
+from ssh2.constants import AuthMethodType, PluginType
+from ssh2.exceptions import ImportFromStringError
+from ssh2.models.auth_method import AuthMethod
+from ssh2.models.session import Session
+from ssh2.utils import import_from_string
+from ssh2.utils.tempfile import generate_temp_file
 
 
 class BasePlugin(metaclass=ABCMeta):
-    KIND = None
+    KIND: ClassVar[Optional[str]] = None
 
     @abstractmethod
     def to_expect_cmds(self, session: Session):
@@ -23,10 +24,10 @@ class BasePlugin(metaclass=ABCMeta):
         raise NotImplementedError
 
     @classmethod
-    def from_dict(cls, plugin: dict) -> "BasePlugin":
-        kind = PluginType(plugin.pop("kind"))
-        plugin_args = plugin.pop("args") or {}
-        obj = kind.get_backend()(**plugin_args)
+    def from_dict(cls, plugin_definition: dict) -> "BasePlugin":
+        kind = PluginType(plugin_definition.pop("kind"))
+        plugin_args = plugin_definition.pop("args") or {}
+        obj = kind.get_backend()(**plugin_args)  # type: ignore
         return obj
 
 
@@ -38,7 +39,7 @@ class BaseLoginPlugin(BasePlugin, metaclass=ABCMeta):
             with open(path, "w") as fh:
                 fh.write(auth.content_decrypted)
         elif auth.type == AuthMethodType.PUBLISH_KEY_PATH.value:
-            path = auth.content_decrypted
+            path = Path(auth.content_decrypted)
         else:
             raise
         return Path(path)

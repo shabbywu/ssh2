@@ -40,8 +40,8 @@ class Session(BaseModel):
             ),
         ]
 
-        for plugin in plugins:
-            plugin = BasePlugin.from_dict(plugin)
+        for plugin_definition in plugins:
+            plugin = BasePlugin.from_dict(plugin_definition)
             cmds.extend(plugin.to_expect_cmds(self))
 
         if "interact" not in cmds:
@@ -57,7 +57,10 @@ class Session(BaseModel):
 
         return dict(
             kind="Session",
-            ref=dict(field="id", value=self.id,),
+            ref=dict(
+                field="id",
+                value=self.id,
+            ),
             spec=dict(
                 name=self.name,
                 tag=self.tag,

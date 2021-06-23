@@ -13,7 +13,10 @@ class TestSshBackend:
             session_obj = Session(
                 plugins=json.dumps([SshLogin().to_json()]),
                 server=ServerConfig(host="127.0.0.1", port=22),
-                client=ClientConfig(user="somebody-1", auth=AuthMethod.from_password("test", "password:"),),
+                client=ClientConfig(
+                    user="somebody-1",
+                    auth=AuthMethod.from_password("test", "password:"),
+                ),
             )
             s.add(session_obj)
 

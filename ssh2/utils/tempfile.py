@@ -22,10 +22,6 @@ def generate_temp_file() -> Path:
     if not tmp_dir.exists() or not tmp_dir.is_dir():
         tmp_dir.mkdir()
 
-    path = Path(
-        tempfile.mkstemp(
-            prefix=TEMP_FILE_PREFIX, suffix=TEMP_FILE_SUFFIX, dir=TEMP_DIR
-        )[1]
-    )
+    path = Path(tempfile.mkstemp(prefix=TEMP_FILE_PREFIX, suffix=TEMP_FILE_SUFFIX, dir=TEMP_DIR)[1])
     logger.debug("Generating temp path: %s", path)
     return path

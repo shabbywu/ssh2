@@ -24,7 +24,10 @@ class AuthMethod(BaseModel):
     def to_json(self):
         return dict(
             kind="AuthMethod",
-            ref=dict(field="id", value=self.id,),
+            ref=dict(
+                field="id",
+                value=self.id,
+            ),
             spec=dict(
                 name=self.name,
                 type=self.type,

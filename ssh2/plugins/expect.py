@@ -22,6 +22,4 @@ class ExpectPlugin(BasePlugin):
         return [f'expect "{self.expect}"', f"send {self.send}"]
 
     def to_json(self):
-        return dict(
-            kind=self.KIND, args=dict(expect=self.expect, send=self.send, raw=self.raw)
-        )
+        return dict(kind=self.KIND, args=dict(expect=self.expect, send=self.send, raw=self.raw))

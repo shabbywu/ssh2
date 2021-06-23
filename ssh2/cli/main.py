@@ -75,9 +75,7 @@ def edit(resource_type, id, name):
     with session_scope() as s:
         query = s.query(RESOURCE_CLS_MAPPER[resource_type]).filter_by(**q)
         if query.count() != 1:
-            raise Exception(
-                "can not edit multi resource as once, please check the filter condition"
-            )
+            raise Exception("can not edit multi resource as once, please check the filter condition")
         resource = query.scalar()
         json = resource.to_json()
 
@@ -110,8 +108,7 @@ def delete(resource_type, id, name, force):
         query = s.query(RESOURCE_CLS_MAPPER[resource_type]).filter_by(**q)
         if query.count() != 1 and not force:
             raise Exception(
-                "can not delete multi resource as once, "
-                "please check the filter condition or add `--force` option"
+                "can not delete multi resource as once, " "please check the filter condition or add `--force` option"
             )
         query.delete()
 
@@ -124,7 +121,7 @@ def quick_login_command(tag):
     cmds = session.to_expect_cmds()
     with open(path, "w") as fh:
         fh.write("#!/usr/bin/expect")
-        fh.write(f"\nspawn ssh2 clean-temp-file\n")
+        fh.write("\nspawn ssh2 clean-temp-file\n")
         fh.write(cmds)
     click.echo(f"expect -f {path}")
 

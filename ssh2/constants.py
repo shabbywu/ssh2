@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
-import typing
+from typing import TYPE_CHECKING, Type
 
-from aenum import Enum, NamedTuple, extend_enum, skip
+from aenum import NamedTuple, extend_enum, skip
 
-if typing.TYPE_CHECKING:
-    from .plugins import BasePlugin
+if TYPE_CHECKING:
+    from enum import Enum
+    from ssh2.plugins import BasePlugin
+else:
+    from aenum import Enum
 
 
 AdvancePluginType = NamedTuple("AdvancePluginType", ("key", "value", "backend"))
 
 
-class AuthMethodType(Enum):
+class AuthMethodType(str, Enum):
     PASSWORD = "PASSWORD"
     PUBLISH_KEY_PATH = "PUBLISH_KEY_PATH"
     PUBLISH_KEY_CONTENT = "PUBLISH_KEY_CONTENT"
@@ -29,10 +32,10 @@ class PluginType(Enum):
     )
 
     @classmethod
-    def register(cls, plugin: "BasePlugin"):
+    def register(cls, plugin: Type["BasePlugin"]):
         extend_enum(cls, plugin.KIND, plugin.KIND)
-        cls.BACKEND_MAP[plugin.KIND] = plugin
+        cls.BACKEND_MAP[plugin.KIND] = plugin  # type: ignore
         return plugin
 
-    def get_backend(self):
-        return self.BACKEND_MAP[self.value]
+    def get_backend(self) -> Type["BasePlugin"]:
+        return self.BACKEND_MAP[self.value]  # type: ignore

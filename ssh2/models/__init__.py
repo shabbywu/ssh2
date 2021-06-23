@@ -28,8 +28,7 @@ def get_engine():
 
 @contextmanager
 def session_scope(session_class=None):
-    """Provide a transactional scope around a series of operations.
-    """
+    """Provide a transactional scope around a series of operations."""
     session = (session_class or get_scoped_session)()
     try:
         yield session
@@ -46,10 +45,10 @@ def create_dababases():
 
 
 __all__ = [
-    AuthMethod,
-    ClientConfig,
-    ServerConfig,
-    Session,
-    get_scoped_session,
-    session_scope,
+    'AuthMethod',
+    'ClientConfig',
+    'ServerConfig',
+    'Session',
+    'get_scoped_session',
+    'session_scope',
 ]
