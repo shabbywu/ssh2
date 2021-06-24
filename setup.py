@@ -23,7 +23,7 @@ if os.path.exists(readme_path):
 setup(
     long_description=readme,
     name='ssh-mgr',
-    version='0.1.1',
+    version='1.0.0',
     description='A Tool to manage ssh connection',
     python_requires='==3.*,>=3.6.0',
     author='shabbywu',
