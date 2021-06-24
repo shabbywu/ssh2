@@ -8,21 +8,106 @@ ssh连接管理工具
 
 ## 使用说明
 ### 如何安装该项目
-本项目使用 [poetry](https://python-poetry.org/) 管理依赖和打包, 目前该项目未发布至任何 pypi 仓库, 因此只能从源码安装。
-1. 请根据 [官方文档](https://python-poetry.org/docs/#installation) 安装 poetry
-2. 下载源码
+本项目使用 [poetry](https://python-poetry.org/) 管理依赖和打包, 目前该项目以发布至 pypi.org, 你可以从 pypi.org 安装该依赖或者选择从源码进行安装。
+
+#### 从 pypi.org 安装该应用
+##### 1. 安装
+p.s. 推荐使用 [pipx](https://pipxproject.github.io/pipx/) 管理基于 pip 安装的命令
+```bash
+#!/usr/bin/env bash
+## 简单安装
+pip install ssh-mgr -i https://pypi.org/simple/
+## 使用 pipx 安装
+pipx install ssh-mgr -i https://pypi.org/simple/
+
+## 加载 ssh2_wrapper.sh 内置的指令
+source $(ssh2 get-wrapper-dot-sh)
+```
+
+##### 2. 使用
+5. 使用(demo)
+```yml
+# file `demo.yml`
+## Create with a nested object
+kind: Session
+spec:
+    tag: session-1
+    name: unique_name_to_mark_this_session_1
+    plugins:
+        -   kind:   SSH_LOGIN
+            args:
+    client:
+        spec:
+            user: username_whose_login_to_server
+            name: unique_name_to_mark_this_client_1
+            auth:
+                spec:
+                    name: unique_name_to_mark_this_auth_1
+                    type: PASSWORD
+                    content: your_password
+                    expect_for_password: str
+    server:
+        spec:
+            name: unique_name_to_mark_this_server_1
+            host: host_of_server
+            port: port_of_server
+---
+# Create with multi object
+kind: ClientConfig
+spec:
+  name: unique_name_to_mark_this_client_2
+  user: username_whose_login_to_server
+  auth:
+    spec:
+      name: unique_name_to_mark_this_auth_2
+      type: INTERACTIVE_PASSWORD
+      content: 'a placeholder'
+---
+kind: ServerConfig
+spec:
+  name: unique_name_to_mark_this_server_2
+  host: host_of_server
+  port: port_of_server
+---
+kind: Session
+spec:
+    tag: session-2
+    name: unique_name_to_mark_this_session_2
+    plugins:
+        -   kind:   SSH_WETERM
+            args:
+    client:
+      ref:
+        field: name
+        value: unique_name_to_mark_this_client_2
+    server:
+      ref:
+        field: name
+        value: unique_name_to_mark_this_server_2
+```
+```bash
+ssh2 create -f demo.yml
+go2s
+# show `session-1 session-2`
+go2s session-1
+# try login to session-1
+```
+
+#### 从源码安装该应用
+##### 1. 请根据 [官方文档](https://python-poetry.org/docs/#installation) 安装 poetry
+##### 2. 下载源码
 ```bash
 #!/usr/bin/env bash
 git clone github https://github.com/shabbywu/ssh2.git
 ```
-3. 使用 poetry 打包项目
+##### 3. 使用 poetry 打包项目
 ```bash
 #!/usr/bin/env bash
 # 假设你刚执行完 git clone
 cd ssh2
 poetry build
 ```
-4. 安装   
+##### 4. 安装   
 p.s. 推荐使用 [pipx](https://pipxproject.github.io/pipx/) 管理基于 pip 安装的命令
 ```bash
 #!/usr/bin/env bash
@@ -37,7 +122,7 @@ pipx install ssh2-0.1.1.tar.gz
 bash
 source $(ssh2 get-wrapper-dot-sh)
 ```
-5. 使用(demo)
+##### 5. 使用(demo)
 ```yml
 # file `demo.yml`
 ## Create with a nested object
