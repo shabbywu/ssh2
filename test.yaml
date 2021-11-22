@@ -1,0 +1,21 @@
+---
+kind: AuthMethod
+spec:
+  id: 2
+  name: "方法"
+  type: "PASSWORD"
+  content: "内容"
+  expect_for_password: "密码: "
+---
+kind: ClientConfig
+spec:
+  id: 1
+  name: 测试1
+  user: 用户A
+  auth:
+    spec:
+      id: 3
+      name: "方法"
+      type: "PASSWORD"
+      content: "内容"
+      expect_for_password: "密码: "
