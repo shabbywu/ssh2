@@ -13,9 +13,9 @@ var getCommand = &cli.Command{
 	ArgsUsage: "[资源类型]",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:        "format",
-			Required:    false,
-			DefaultText: "yaml",
+			Name:     "format",
+			Required: false,
+			Value:    "yaml",
 		},
 	},
 
@@ -27,7 +27,7 @@ var getCommand = &cli.Command{
 	},
 	Action: func(ctx *cli.Context) (err error) {
 		kind := ctx.Args().First()
-		objs := models.Get(kind, nil)
+		objs := models.List(kind)
 
 		if objs == nil {
 			return cli.Exit("not found.", 0)
@@ -36,7 +36,6 @@ var getCommand = &cli.Command{
 		var data []byte
 		if ctx.Value("format") == "yaml" {
 			data, err = yaml.Marshal(objs)
-
 		} else {
 			data, err = json.Marshal(objs)
 		}

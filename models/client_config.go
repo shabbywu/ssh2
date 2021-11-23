@@ -20,8 +20,11 @@ func (config ClientConfig) ToJson() ([]byte, error) {
 }
 
 func (config *ClientConfig) GetAuthMethod() (*AuthMethod, error) {
-	spec := db.Where("kind", "=", "AuthMethod").Where("spec.id", "=", config.AuthMethodId).Select("spec").Get()
-	obj, ok := spec.(AuthMethod)
+	ptr, err := GetByField("AuthMethod", "id", config.AuthMethodId)
+	if err != nil {
+		return nil, err
+	}
+	obj, ok := ptr.(AuthMethod)
 	if !ok {
 		return nil, errors.New("非法的 AuthMethod 结构体")
 	}

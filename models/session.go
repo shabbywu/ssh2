@@ -27,8 +27,11 @@ func (s *Session) ToExpectCommand() (cmd string, err error) {
 }
 
 func (s *Session) GetClientConfig() (*ClientConfig, error) {
-	spec := db.Where("kind", "=", "ClientConfig").Where("spec.id", "=", s.ClientConfigId).Select("spec").Get()
-	obj, ok := spec.(ClientConfig)
+	ptr, err := GetByField("ClientConfig", "id", s.ClientConfigId)
+	if err != nil {
+		return nil, err
+	}
+	obj, ok := ptr.(ClientConfig)
 	if !ok {
 		return nil, errors.New("非法的 ClientConfig 结构体")
 	}
@@ -36,8 +39,11 @@ func (s *Session) GetClientConfig() (*ClientConfig, error) {
 }
 
 func (s *Session) GetServerConfig() (*ServerConfig, error) {
-	spec := db.Where("kind", "=", "ServerConfig").Where("spec.id", "=", s.ServerConfigId).Select("spec").Get()
-	obj, ok := spec.(ServerConfig)
+	ptr, err := GetByField("ServerConfig", "id", s.ServerConfigId)
+	if err != nil {
+		return nil, err
+	}
+	obj, ok := ptr.(ServerConfig)
 	if !ok {
 		return nil, errors.New("非法的 ServerConfig 结构体")
 	}

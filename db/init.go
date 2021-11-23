@@ -7,12 +7,20 @@ import (
 	"log"
 )
 
+type Model interface {
+	GetId() int
+	SetId(id int)
+	GetName() string
+	GetKind() string
+	ToJson() ([]byte, error)
+}
+
 var db *buntdb.DB
 
 func init() {
 	// Open the data.db file. It will be created if it doesn't exist.
 	var err error
-	db, err = buntdb.Open(":memory:")
+	db, err = buntdb.Open("/Users/shabbywu/Workplace/golang/ssh2/db.bin")
 	if err != nil {
 		log.Fatal("Can't open db, detail: ", err)
 	}

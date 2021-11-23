@@ -2,12 +2,12 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/thedevsaddam/gojsonq/v2"
-	"io/ioutil"
+	"github.com/tidwall/gjson"
 	"log"
-	"os"
-	"path"
+	"reflect"
+	"ssh2/db"
 )
 
 type Model interface {
@@ -29,37 +29,47 @@ type Ref struct {
 	Value interface{}
 }
 
-var key string
-
-var db *gojsonq.JSONQ
-var cache interface{}
-
-func init() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	key = path.Join(home, ".ssh/data.json")
-
-	db = gojsonq.New().File(key)
-	cache = db.Get()
+var kindTypeMap = map[string]reflect.Type{
+	"AuthMethod":   reflect.TypeOf(AuthMethod{}),
+	"ClientConfig": reflect.TypeOf(ClientConfig{}),
+	"ServerConfig": reflect.TypeOf(ServerConfig{}),
+	"Session":      reflect.TypeOf(Session{}),
 }
 
-func Save() {
-	data, err := json.Marshal(cache)
-	if err != nil {
-		log.Fatal(err)
-	}
+func List(kind string) []interface{} {
+	objs := db.List(kind)
+	var result []interface{}
 
-	if err = ioutil.WriteFile(key, data, 0666); err != nil {
-		log.Fatal(err)
-		return
+	for _, content := range objs {
+		spec := gjson.Get(content, "spec").String()
+		obj, err := parseObj(kind, spec)
+		if err == nil {
+			result = append(result, &obj)
+		} else {
+			log.Fatal(err)
+		}
 	}
+	return result
 }
 
-func Get(kind string, ref *Ref) interface{} {
-	if ref == nil {
-		return db.Where("kind", "=", kind).Get()
+// Get Single Object By Field
+func GetByField(kind string, field, value interface{}) (result interface{}, err error) {
+	content, err := db.GetByField(kind, field, value)
+	if err != nil {
+		return nil, err
 	}
-	return db.Where("kind", "=", kind).Where(fmt.Sprintf("spec.%s", ref.Field), "=", ref.Value).Get()
+	spec := gjson.Get(content, "spec").String()
+	return parseObj(kind, spec)
+}
+
+func parseObj(kind, spec string) (result interface{}, err error) {
+	t := kindTypeMap[kind]
+
+	instance := reflect.New(t)
+	ptr := instance.Interface()
+
+	if e := json.Unmarshal([]byte(spec), &ptr); e != nil {
+		return nil, errors.New(fmt.Sprintf("非法的 %s 结构体", kind))
+	}
+	return ptr, nil
 }

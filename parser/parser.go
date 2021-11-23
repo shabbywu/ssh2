@@ -105,10 +105,7 @@ func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 			objDefinition := spec[attr].(map[interface{}]interface{})
 			if _ref := objDefinition["ref"]; _ref != nil {
 				ref := _ref.(map[interface{}]interface{})
-				obj := models.Get(kind, &models.Ref{
-					Field: ref["field"].(string),
-					Value: ref["value"],
-				})
+				obj, _ := models.GetByField(kind, ref["field"].(string), ref["value"])
 				if instance, ok := obj.(models.Model); !ok {
 					delete(spec, attr)
 					spec[attrToFullKey[attr]] = instance.GetId()
