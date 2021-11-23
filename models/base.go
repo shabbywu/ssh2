@@ -12,14 +12,16 @@ import (
 
 type Model interface {
 	GetId() int
+	SetId(id int)
 	GetName() string
 	GetKind() string
+	ToJson() ([]byte, error)
 }
 
 //jsonDumpAble: 将模型序列化到 json(数据库)
 type jsonDumpAble struct {
-	Kind string
-	Spec interface{}
+	Kind string      `json:"kind,omitempty"yaml:"kind"`
+	Spec interface{} `json:"spec,omitempty"yaml:"spec"`
 }
 
 type Ref struct {
@@ -32,7 +34,7 @@ var key string
 var db *gojsonq.JSONQ
 var cache interface{}
 
-func init()  {
+func init() {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err)
@@ -49,13 +51,13 @@ func Save() {
 		log.Fatal(err)
 	}
 
-	if err = ioutil.WriteFile(key, data, 0666); err != nil{
+	if err = ioutil.WriteFile(key, data, 0666); err != nil {
 		log.Fatal(err)
 		return
 	}
 }
 
-func Get(kind string, ref *Ref) (interface{}){
+func Get(kind string, ref *Ref) interface{} {
 	if ref == nil {
 		return db.Where("kind", "=", kind).Get()
 	}

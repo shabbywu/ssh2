@@ -8,8 +8,8 @@ import (
 )
 
 var getCommand = &cli.Command{
-	Name:                   "get",
-	Usage:                  "get resource",
+	Name:      "get",
+	Usage:     "get resource",
 	ArgsUsage: "[资源类型]",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
@@ -33,7 +33,6 @@ var getCommand = &cli.Command{
 			return cli.Exit("not found.", 0)
 		}
 
-
 		var data []byte
 		if ctx.Value("format") == "yaml" {
 			data, err = yaml.Marshal(objs)
@@ -41,7 +40,7 @@ var getCommand = &cli.Command{
 		} else {
 			data, err = json.Marshal(objs)
 		}
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		println(string(data))

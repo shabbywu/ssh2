@@ -6,15 +6,15 @@ import (
 )
 
 type ClientConfig struct {
-	ID int
-	Name string
-	User string
-	AuthMethodId int
+	ID           int    `yaml:"id" json:"id,omitempty"`
+	Name         string `yaml:"name" json:"name,omitempty"`
+	User         string `yaml:"user" json:"user,omitempty"`
+	AuthMethodId int    `yaml:"auth_method_id" json:"auth_method_id,omitempty"`
 }
 
-func (config *ClientConfig) ToJson () ([]byte, error){
+func (config ClientConfig) ToJson() ([]byte, error) {
 	return json.Marshal(jsonDumpAble{
-		Kind: "ClientConfig",
+		Kind: config.GetKind(),
 		Spec: config,
 	})
 }
@@ -30,6 +30,10 @@ func (config *ClientConfig) GetAuthMethod() (*AuthMethod, error) {
 
 func (config ClientConfig) GetId() int {
 	return config.ID
+}
+
+func (config ClientConfig) SetId(id int) {
+	config.ID = id
 }
 
 func (config ClientConfig) GetName() string {

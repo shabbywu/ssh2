@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"ssh2/db"
 	"ssh2/models"
 	"strconv"
 )
@@ -12,9 +13,8 @@ import (
 type DocumentRecord struct {
 	Kind string
 	Spec map[interface{}]interface{}
-	Ref models.Ref
+	Ref  models.Ref
 }
-
 
 type YamlParser struct {
 }
@@ -37,11 +37,24 @@ func parseOrGenerateId(kind string, spec map[interface{}]interface{}) (id int, e
 	return id, err
 }
 
+func parserWrapper(core func(map[interface{}]interface{}) (models.Model, error)) func(map[interface{}]interface{}) (models.Model, error) {
+	return func(m map[interface{}]interface{}) (models.Model, error) {
+		parsed, err := core(m)
+		if err != nil {
+			return parsed, err
+		}
+		// TODO: save to db
+		fmt.Printf("解析到 %s: %+v\n", parsed.GetKind(), parsed)
+		_, err = db.UpdateOrCreate(parsed)
+		return parsed, err
+	}
+}
+
 func parseAuthMethodSpec(spec map[interface{}]interface{}) (models.Model, error) {
 	var parsed = models.AuthMethod{}
 
 	id, err := parseOrGenerateId("AuthMethod", spec)
-	if err != nil{
+	if err != nil {
 		return parsed, err
 	}
 
@@ -50,9 +63,6 @@ func parseAuthMethodSpec(spec map[interface{}]interface{}) (models.Model, error)
 	parsed.Type = spec["type"].(string)
 	parsed.Content = spec["content"].(string)
 	parsed.ExpectForPassword = spec["expect_for_password"].(string)
-
-	// TODO: save to db
-	fmt.Printf("解析到 AuthMethod: %+v\n", parsed)
 	return parsed, nil
 }
 
@@ -60,7 +70,7 @@ func parseClientConfig(spec map[interface{}]interface{}) (models.Model, error) {
 	var parsed = models.ClientConfig{}
 
 	id, err := parseOrGenerateId("ClientConfig", spec)
-	if err != nil{
+	if err != nil {
 		return parsed, err
 	}
 
@@ -68,15 +78,12 @@ func parseClientConfig(spec map[interface{}]interface{}) (models.Model, error) {
 	parsed.Name = spec["name"].(string)
 	parsed.User = spec["user"].(string)
 	parsed.AuthMethodId = spec["auth_method_id"].(int)
-
-	// TODO: save to db
-	fmt.Printf("解析到 ClientConfig: %+v\n", parsed)
 	return parsed, nil
 }
 
 var kindParserMapper = map[string]func(map[interface{}]interface{}) (models.Model, error){
-	"AuthMethod":   parseAuthMethodSpec,
-	"ClientConfig": parseClientConfig,
+	"AuthMethod":   parserWrapper(parseAuthMethodSpec),
+	"ClientConfig": parserWrapper(parseClientConfig),
 }
 
 var attrKindMapper = map[string]string{
@@ -91,11 +98,10 @@ var attrToFullKey = map[string]string{
 	"server": "server_config_id",
 }
 
-
 func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 	spec := record.Spec
 	for attr, kind := range attrKindMapper {
-		if (spec[attr] != nil) {
+		if spec[attr] != nil {
 			objDefinition := spec[attr].(map[interface{}]interface{})
 			if _ref := objDefinition["ref"]; _ref != nil {
 				ref := _ref.(map[interface{}]interface{})
