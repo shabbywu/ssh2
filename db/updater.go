@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/tidwall/buntdb"
 	"reflect"
-	"ssh2/models"
 )
 
-func UpdateOrCreate(model models.Model) (created bool, err error) {
+func UpdateOrCreate(model Model) (created bool, err error) {
 	if model.GetId() == 0 {
 		created = true
 		id, err := getNextId(model.GetKind())
@@ -47,7 +46,7 @@ func UpdateOrCreate(model models.Model) (created bool, err error) {
 	return created, nil
 }
 
-func updateMetaID(model models.Model, tx *buntdb.Tx) error {
+func updateMetaID(model Model, tx *buntdb.Tx) error {
 	metadata, err := GetMetaData()
 	if err != nil {
 		return err
