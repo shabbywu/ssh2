@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -10,13 +9,13 @@ import (
 )
 
 var applyCommand = &cli.Command{
-	Name:                   "apply",
-	Usage:                  "apply resource definition",
+	Name:  "apply",
+	Usage: "apply resource definition",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:        "file",
-			Aliases: []string{"f"},
-			Required:    true,
+			Name:     "file",
+			Aliases:  []string{"f"},
+			Required: true,
 		},
 	},
 	Action: func(ctx *cli.Context) (err error) {
@@ -29,11 +28,10 @@ var applyCommand = &cli.Command{
 		decoder := yaml.NewDecoder(bytes.NewReader(data))
 
 		for decoder.Decode(&record) == nil {
-			ret, err := parser.YamlParser{}.ParseRecord(record)
+			_, err := parser.YamlParser{}.ParseRecord(record)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("ret: %+v\n", *ret)
 		}
 		return nil
 	},

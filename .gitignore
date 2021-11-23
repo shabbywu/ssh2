@@ -2,3 +2,4 @@ ssh2.egg-info/
 .idea/
 *.pyc
 .mypy_cache
+ssh2

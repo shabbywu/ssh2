@@ -5,16 +5,16 @@ package cmd
 
 import (
 	"github.com/creack/pty"
-	"golang.org/x/term"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/term"
 	"io"
 	"os"
 	"os/exec"
 )
 
 var execCommand = &cli.Command{
-	Name:                   "exec",
-	Usage:                  "执行指令",
+	Name:      "exec",
+	Usage:     "执行指令",
 	ArgsUsage: "[资源类型]",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
@@ -51,7 +51,6 @@ var execCommand = &cli.Command{
 	},
 }
 
-
-func init(){
+func init() {
 	App.Commands = append(App.Commands, execCommand)
 }
