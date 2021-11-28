@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/creack/pty"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/term"
@@ -12,23 +13,40 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"ssh2/integrated"
+	"ssh2/models"
+	"ssh2/utils/tempfile"
 	"syscall"
 )
 
 var execCommand = &cli.Command{
-	Name:      "exec",
-	Usage:     "执行指令",
-	ArgsUsage: "[资源类型]",
+	Name:  "login",
+	Usage: "登录服务器",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:        "format",
-			Required:    false,
-			DefaultText: "yaml",
+			Name:     "tag",
+			Required: true,
 		},
 	},
 	Action: func(ctx *cli.Context) error {
+		model, err := models.GetByField("Session", "tag", ctx.Value("tag"))
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		m := tempfile.GetManager("")
+		defer m.Clean()
+
+		session := model.(*models.Session)
+		file, err := integrated.ToExpectFile(session)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("file: %s\n", file)
+
 		// Create arbitrary command.
-		c := exec.Command("ssh", "-i", "/Users/shabbywu/.ssh/TX-WIN10", "-p", "22", "root@81.71.45.54")
+		c := exec.Command("expect", "-f", file)
 
 		// Start the command with a pty.
 		ptmx, err := pty.Start(c)

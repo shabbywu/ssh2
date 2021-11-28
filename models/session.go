@@ -22,20 +22,16 @@ func (s *Session) ToJson() ([]byte, error) {
 	})
 }
 
-func (s *Session) ToExpectCommand() (cmd string, err error) {
-	return "", nil
-}
-
 func (s *Session) GetClientConfig() (*ClientConfig, error) {
 	ptr, err := GetByField("ClientConfig", "id", s.ClientConfigId)
 	if err != nil {
 		return nil, err
 	}
-	obj, ok := ptr.(ClientConfig)
+	obj, ok := ptr.(*ClientConfig)
 	if !ok {
 		return nil, errors.New("非法的 ClientConfig 结构体")
 	}
-	return &obj, nil
+	return obj, nil
 }
 
 func (s *Session) GetServerConfig() (*ServerConfig, error) {
@@ -43,11 +39,11 @@ func (s *Session) GetServerConfig() (*ServerConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	obj, ok := ptr.(ServerConfig)
+	obj, ok := ptr.(*ServerConfig)
 	if !ok {
 		return nil, errors.New("非法的 ServerConfig 结构体")
 	}
-	return &obj, nil
+	return obj, nil
 }
 
 func (s *Session) GetId() int {

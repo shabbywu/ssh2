@@ -88,6 +88,11 @@ func initIndex() {
 				IndexPattern: SessionIndexPattern,
 				IndexField:   "spec.name",
 			},
+			{
+				IndexName:    SessionTagIndexName,
+				IndexPattern: SessionIndexPattern,
+				IndexField:   "spec.tag",
+			},
 		} {
 			if err := tx.CreateIndex(index.IndexName, index.IndexPattern, buntdb.IndexJSON(index.IndexField)); err != nil {
 				log.Fatal(fmt.Sprintf("Fail to create index<`%s`> for pattern `%s`, detail: %s", index.IndexName, index.IndexPattern, err))

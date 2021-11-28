@@ -2,11 +2,12 @@ package models
 
 import (
 	"encoding/json"
+	"ssh2/utils/tempfile"
 )
 
 const (
 	AuthPassword            string = "PASSWORD"
-	AUthPublishKeyFile      string = "PUBLISH_KEY_FILE"
+	AUthPublishKeyFile      string = "PUBLISH_KEY_PATH"
 	AuthPublishKey          string = "PUBLISH_KEY"
 	AUthInteractivePassword string = "INTERACTIVE_PASSWORD"
 )
@@ -40,4 +41,25 @@ func (auth *AuthMethod) GetName() string {
 
 func (auth *AuthMethod) GetKind() string {
 	return "AuthMethod"
+}
+
+func (auth *AuthMethod) GetPublishKeyPath() string {
+	content := auth.GetDecryptedContent()
+	if auth.Type == AuthPublishKey {
+		file, err := tempfile.GetManager("").TempFile(auth.GetName())
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+		file.WriteString(content)
+		return file.Name()
+		// TODO: 写到临时文件
+		return content
+	} else {
+		return content
+	}
+}
+
+func (auth *AuthMethod) GetDecryptedContent() string {
+	return auth.Content
 }

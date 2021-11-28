@@ -3,3 +3,4 @@ ssh2.egg-info/
 *.pyc
 .mypy_cache
 ssh2
+db.bin

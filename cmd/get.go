@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"github.com/urfave/cli/v2"
-	"gopkg.in/yaml.v2"
+	"html/template"
+	"os"
 	"ssh2/models"
 )
 
@@ -13,36 +13,30 @@ var getCommand = &cli.Command{
 	ArgsUsage: "[资源类型]",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:     "format",
+			Name:     "template",
 			Required: false,
-			Value:    "yaml",
+			Value:    "{{ .Tag }}",
+		},
+		&cli.StringFlag{
+			Name:     "kind",
+			Required: false,
+			Value:    "Session",
 		},
 	},
-
-	Before: func(ctx *cli.Context) (err error) {
-		if ctx.NArg() != 1 {
-			return cli.Exit("缺失资源类型参数", 1)
-		}
-		return nil
-	},
 	Action: func(ctx *cli.Context) (err error) {
-		kind := ctx.Args().First()
+		kind := ctx.Value("kind").(string)
 		objs := models.List(kind)
 
 		if objs == nil {
 			return cli.Exit("not found.", 0)
 		}
 
-		var data []byte
-		if ctx.Value("format") == "yaml" {
-			data, err = yaml.Marshal(objs)
-		} else {
-			data, err = json.Marshal(objs)
+		templator, _ := template.New("template").Parse(ctx.Value("template").(string))
+
+		for _, obj := range objs {
+			_ = templator.Execute(os.Stdout, obj)
+			os.Stdout.Write([]byte("\n"))
 		}
-		if err != nil {
-			return err
-		}
-		println(string(data))
 		return nil
 	},
 }
