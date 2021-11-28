@@ -62,6 +62,7 @@ func parseAuthMethodSpec(spec map[interface{}]interface{}) (models.Model, error)
 	parsed.ID = id
 	parsed.Name = spec["name"].(string)
 	parsed.Type = spec["type"].(string)
+	// TODO: 混淆加密？
 	parsed.Content = spec["content"].(string)
 
 	if expect_for_password, ok := spec["expect_for_password"]; ok {
@@ -112,9 +113,9 @@ func parseSession(spec map[interface{}]interface{}) (models.Model, error) {
 	}
 
 	var plugins []map[string]interface{}
-	pluginsData := spec["plugins"].([]interface{})
+	rawPlugins := spec["plugins"].([]interface{})
 
-	for _, data := range pluginsData {
+	for _, data := range rawPlugins {
 		m := map[string]interface{}{}
 		d := data.(map[interface{}]interface{})
 		for k, v := range d {
@@ -123,17 +124,15 @@ func parseSession(spec map[interface{}]interface{}) (models.Model, error) {
 		plugins = append(plugins, m)
 	}
 
-	pluginsString, err := json.Marshal(plugins)
+	pluginsBytes, err := json.Marshal(plugins)
 	if err != nil {
 		return parsed, err
 	}
 
 	parsed.ID = id
-
+	parsed.Plugins = string(pluginsBytes)
 	parsed.Name = spec["name"].(string)
 	parsed.Tag = spec["tag"].(string)
-	parsed.Plugins = string(pluginsString)
-
 	parsed.ClientConfigId = spec["client_config_id"].(int)
 	parsed.ServerConfigId = spec["server_config_id"].(int)
 	return parsed, nil

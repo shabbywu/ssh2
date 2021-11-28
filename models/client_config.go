@@ -24,11 +24,11 @@ func (config *ClientConfig) GetAuthMethod() (*AuthMethod, error) {
 	if err != nil {
 		return nil, err
 	}
-	obj, ok := ptr.(AuthMethod)
+	obj, ok := ptr.(*AuthMethod)
 	if !ok {
 		return nil, errors.New("非法的 AuthMethod 结构体")
 	}
-	return &obj, nil
+	return obj, nil
 }
 
 func (config *ClientConfig) GetId() int {

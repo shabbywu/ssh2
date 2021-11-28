@@ -1,17 +1,11 @@
 function showsessions {
-    ssh2 get session --format ".tag"
-}
-
-function ssh2_quick_login_command {
-    typeset ssh_tag="$1"
-    command=$(ssh2 quick-login-command $ssh_tag)
-    echo $command
-    return 0
+    ssh2 get --kind Session
 }
 
 function ssh2_verify_go2s_ssh_tag {
-    typeset ssh_tag="$1"
-    if [ ! ssh2_quick_login_command $ssh_tag ]
+    typeset ssh_tag="${1:-''}"
+    test=`showsessions | grep "^${ssh_tag}$"`
+    if [ "${test}" = "" ]
     then
         echo "Error: Session not found with tag<'$ssh_tag'>"
         return 1
@@ -34,7 +28,6 @@ function go2s {
         tst="-lt"
     fi
 
-
     typeset ssh_tag="$1"
 
     if [ "$ssh_tag" = "" ]
@@ -42,10 +35,9 @@ function go2s {
         showsessions
         return 1
     fi
-    ssh2_verify_go2s_ssh_tag "ssh_tag" || return 1
-    command=$(ssh2_quick_login_command $ssh_tag)
-    eval $command
+    ssh2_verify_go2s_ssh_tag "${ssh_tag}" || return 1
 
+    ssh2 login --tag "${ssh_tag}"
 }
 
 function ssh2_setup_tab_completion {

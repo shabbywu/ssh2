@@ -17,6 +17,7 @@ const (
 	SessionIndexPattern  = "kind:Session:id:*"
 	SessionIdIndexName   = "Session:id"
 	SessionNameIndexName = "Session:name"
+	SessionTagIndexName  = "Session:tag"
 
 	// MetaData Field
 	MetaDataKey = "MetaData"

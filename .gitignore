@@ -5,3 +5,4 @@ ssh2.egg-info/
 dist
 build
 ssh2
+db.bin
