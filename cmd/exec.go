@@ -8,8 +8,11 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/term"
 	"io"
+	"log"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 )
 
 var execCommand = &cli.Command{
@@ -25,7 +28,7 @@ var execCommand = &cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		// Create arbitrary command.
-		c := exec.Command("bash")
+		c := exec.Command("ssh", "-i", "/Users/shabbywu/.ssh/TX-WIN10", "-p", "22", "root@81.71.45.54")
 
 		// Start the command with a pty.
 		ptmx, err := pty.Start(c)
@@ -34,6 +37,18 @@ var execCommand = &cli.Command{
 		}
 		// Make sure to close the pty at the end.
 		defer func() { _ = ptmx.Close() }() // Best effort.
+
+		// Handle pty size.
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, syscall.SIGWINCH)
+		go func() {
+			for range ch {
+				if err := pty.InheritSize(os.Stdin, ptmx); err != nil {
+					log.Printf("error resizing pty: %s", err)
+				}
+			}
+		}()
+		ch <- syscall.SIGWINCH // Initial resize.
 
 		// Set stdin in raw mode.
 		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))

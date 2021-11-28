@@ -9,25 +9,25 @@ type ServerConfig struct {
 	Port int    `yaml:"port" json:"port,omitempty"`
 }
 
-func (config ServerConfig) ToJson() ([]byte, error) {
+func (config *ServerConfig) ToJson() ([]byte, error) {
 	return json.Marshal(jsonDumpAble{
 		Kind: config.GetKind(),
 		Spec: config,
 	})
 }
 
-func (config ServerConfig) GetId() int {
+func (config *ServerConfig) GetId() int {
 	return config.ID
 }
 
-func (config ServerConfig) SetId(id int) {
+func (config *ServerConfig) SetId(id int) {
 	config.ID = id
 }
 
-func (config ServerConfig) GetName() string {
+func (config *ServerConfig) GetName() string {
 	return config.Name
 }
 
-func (config ServerConfig) GetKind() string {
+func (config *ServerConfig) GetKind() string {
 	return "ServerConfig"
 }

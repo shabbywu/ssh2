@@ -4,11 +4,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var App = &cli.App{}
+var App = cli.NewApp()
 
 func init() {
-	App.Commands = []*cli.Command{
+	App.EnableBashCompletion = true
+	App.Commands = append(App.Commands, []*cli.Command{
 		getCommand,
 		applyCommand,
-	}
+	}...)
 }
