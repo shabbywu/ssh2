@@ -61,8 +61,8 @@ func GetMetaData() (metadata MetaData, err error) {
 	return metadata, err
 }
 
-// getNextId 返回下一个可用的 ID
-func getNextId(kind string) (result int, err error) {
+// GetNextId 返回下一个可用的 ID
+func GetNextId(kind string) (result int, err error) {
 	metadata, err := GetMetaData()
 	if err != nil {
 		return 1, err

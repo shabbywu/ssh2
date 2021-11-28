@@ -1,6 +1,8 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 const (
 	AuthPassword            string = "PASSWORD"
@@ -17,25 +19,25 @@ type AuthMethod struct {
 	ExpectForPassword string `yaml:"expect_for_password" json:"expect_for_password,omitempty"`
 }
 
-func (auth AuthMethod) ToJson() ([]byte, error) {
+func (auth *AuthMethod) ToJson() ([]byte, error) {
 	return json.Marshal(jsonDumpAble{
 		Kind: auth.GetKind(),
 		Spec: auth,
 	})
 }
 
-func (auth AuthMethod) GetId() int {
+func (auth *AuthMethod) GetId() int {
 	return auth.ID
 }
 
-func (auth AuthMethod) SetId(id int) {
+func (auth *AuthMethod) SetId(id int) {
 	auth.ID = id
 }
 
-func (auth AuthMethod) GetName() string {
+func (auth *AuthMethod) GetName() string {
 	return auth.Name
 }
 
-func (auth AuthMethod) GetKind() string {
+func (auth *AuthMethod) GetKind() string {
 	return "AuthMethod"
 }

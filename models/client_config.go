@@ -12,7 +12,7 @@ type ClientConfig struct {
 	AuthMethodId int    `yaml:"auth_method_id" json:"auth_method_id,omitempty"`
 }
 
-func (config ClientConfig) ToJson() ([]byte, error) {
+func (config *ClientConfig) ToJson() ([]byte, error) {
 	return json.Marshal(jsonDumpAble{
 		Kind: config.GetKind(),
 		Spec: config,
@@ -31,18 +31,18 @@ func (config *ClientConfig) GetAuthMethod() (*AuthMethod, error) {
 	return &obj, nil
 }
 
-func (config ClientConfig) GetId() int {
+func (config *ClientConfig) GetId() int {
 	return config.ID
 }
 
-func (config ClientConfig) SetId(id int) {
+func (config *ClientConfig) SetId(id int) {
 	config.ID = id
 }
 
-func (config ClientConfig) GetName() string {
+func (config *ClientConfig) GetName() string {
 	return config.Name
 }
 
-func (config ClientConfig) GetKind() string {
+func (config *ClientConfig) GetKind() string {
 	return "ClientConfig"
 }

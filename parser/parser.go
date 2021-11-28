@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -19,10 +20,10 @@ type DocumentRecord struct {
 type YamlParser struct {
 }
 
-func parseOrGenerateId(kind string, spec map[interface{}]interface{}) (id int, err error) {
+func parseIdField(spec map[interface{}]interface{}) (id int, err error) {
 	if _id := spec["id"]; _id == nil {
-		// TODO: 生成 id
-		id = 1
+		// ID 设置成 0, 存储时则自动生成 ID
+		id = 0
 	} else {
 		switch v := _id.(type) {
 		case int:
@@ -51,9 +52,9 @@ func parserWrapper(core func(map[interface{}]interface{}) (models.Model, error))
 }
 
 func parseAuthMethodSpec(spec map[interface{}]interface{}) (models.Model, error) {
-	var parsed = models.AuthMethod{}
+	var parsed = &models.AuthMethod{}
 
-	id, err := parseOrGenerateId("AuthMethod", spec)
+	id, err := parseIdField(spec)
 	if err != nil {
 		return parsed, err
 	}
@@ -62,14 +63,19 @@ func parseAuthMethodSpec(spec map[interface{}]interface{}) (models.Model, error)
 	parsed.Name = spec["name"].(string)
 	parsed.Type = spec["type"].(string)
 	parsed.Content = spec["content"].(string)
-	parsed.ExpectForPassword = spec["expect_for_password"].(string)
+
+	if expect_for_password, ok := spec["expect_for_password"]; ok {
+		parsed.ExpectForPassword = expect_for_password.(string)
+	} else {
+		parsed.ExpectForPassword = ""
+	}
 	return parsed, nil
 }
 
 func parseClientConfig(spec map[interface{}]interface{}) (models.Model, error) {
-	var parsed = models.ClientConfig{}
+	var parsed = &models.ClientConfig{}
 
-	id, err := parseOrGenerateId("ClientConfig", spec)
+	id, err := parseIdField(spec)
 	if err != nil {
 		return parsed, err
 	}
@@ -81,9 +87,63 @@ func parseClientConfig(spec map[interface{}]interface{}) (models.Model, error) {
 	return parsed, nil
 }
 
+func parseServerConfig(spec map[interface{}]interface{}) (models.Model, error) {
+	var parsed = &models.ServerConfig{}
+
+	id, err := parseIdField(spec)
+	if err != nil {
+		return parsed, err
+	}
+
+	parsed.ID = id
+	parsed.Name = spec["name"].(string)
+	parsed.Host = spec["host"].(string)
+	parsed.Port = spec["port"].(int)
+
+	return parsed, nil
+}
+
+func parseSession(spec map[interface{}]interface{}) (models.Model, error) {
+	var parsed = &models.Session{}
+
+	id, err := parseIdField(spec)
+	if err != nil {
+		return parsed, err
+	}
+
+	var plugins []map[string]interface{}
+	pluginsData := spec["plugins"].([]interface{})
+
+	for _, data := range pluginsData {
+		m := map[string]interface{}{}
+		d := data.(map[interface{}]interface{})
+		for k, v := range d {
+			m[k.(string)] = v
+		}
+		plugins = append(plugins, m)
+	}
+
+	pluginsString, err := json.Marshal(plugins)
+	if err != nil {
+		return parsed, err
+	}
+
+	parsed.ID = id
+
+	parsed.Name = spec["name"].(string)
+	parsed.Tag = spec["tag"].(string)
+	parsed.Plugins = string(pluginsString)
+
+	parsed.ClientConfigId = spec["client_config_id"].(int)
+	parsed.ServerConfigId = spec["server_config_id"].(int)
+	return parsed, nil
+}
+
 var kindParserMapper = map[string]func(map[interface{}]interface{}) (models.Model, error){
 	"AuthMethod":   parserWrapper(parseAuthMethodSpec),
 	"ClientConfig": parserWrapper(parseClientConfig),
+	"ServerConfig": parserWrapper(parseServerConfig),
+	"Session":      parserWrapper(parseSession),
 }
 
 var attrKindMapper = map[string]string{
@@ -103,25 +163,33 @@ func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 	for attr, kind := range attrKindMapper {
 		if spec[attr] != nil {
 			objDefinition := spec[attr].(map[interface{}]interface{})
+			// 处理使用 ref 引用的逻辑
 			if _ref := objDefinition["ref"]; _ref != nil {
 				ref := _ref.(map[interface{}]interface{})
 				obj, _ := models.GetByField(kind, ref["field"].(string), ref["value"])
-				if instance, ok := obj.(models.Model); !ok {
+				if instance, ok := obj.(models.Model); ok {
+					// 替换属性成外键字段
 					delete(spec, attr)
 					spec[attrToFullKey[attr]] = instance.GetId()
 				} else {
 					log.Fatal(errors.New("404 Not Found"))
 				}
 			} else {
+				// 递归解析属性
 				innerSpec := objDefinition["spec"].(map[interface{}]interface{})
-				if parser, ok := kindParserMapper[kind]; ok {
-					instance, err := parser(innerSpec)
-					if err != nil {
-						log.Fatal(err)
-					}
-					delete(spec, attr)
-					spec[attrToFullKey[attr]] = instance.GetId()
+
+				innerRecord := DocumentRecord{
+					Kind: kind,
+					Spec: innerSpec,
 				}
+
+				instance, err := p.ParseRecord(innerRecord)
+				if err != nil {
+					log.Fatal(err)
+				}
+				// 替换属性成外键字段
+				delete(spec, attr)
+				spec[attrToFullKey[attr]] = (*instance).GetId()
 			}
 		}
 	}

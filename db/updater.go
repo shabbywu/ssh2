@@ -4,25 +4,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tidwall/buntdb"
+	"github.com/tidwall/gjson"
 	"reflect"
 )
 
 func UpdateOrCreate(model Model) (created bool, err error) {
 	if model.GetId() == 0 {
-		created = true
-		id, err := getNextId(model.GetKind())
-		if err != nil {
-			return false, err
+		sameNameModel, _ := GetByField(model.GetKind(), "name", model.GetName())
+		if sameNameModel != "" {
+			created = false
+			id := gjson.Get(sameNameModel, "spec.id").Int()
+			model.SetId(int(id))
+		} else {
+			created = true
+			id, err := GetNextId(model.GetKind())
+			if err != nil {
+				return false, err
+			}
+			model.SetId(id)
 		}
-		model.SetId(id)
 	} else {
 		created = false
 	}
 
 	dbKey := fmt.Sprintf("kind:%s:id:%d", model.GetKind(), model.GetId())
 	value, err := model.ToJson()
-
-	fmt.Printf("It's going to set %s to `%s`\n", value, dbKey)
 
 	if err != nil {
 		return false, err
@@ -31,6 +37,7 @@ func UpdateOrCreate(model Model) (created bool, err error) {
 	err = db.Update(func(tx *buntdb.Tx) error {
 		_, _, err = tx.Set(dbKey, string(value), nil)
 		if err != nil {
+
 			return err
 		}
 
@@ -47,11 +54,14 @@ func UpdateOrCreate(model Model) (created bool, err error) {
 }
 
 func updateMetaID(model Model, tx *buntdb.Tx) error {
-	metadata, err := GetMetaData()
+	metadata := &MetaData{}
+	metadataString, err := tx.Get(MetaDataKey)
+	err = json.Unmarshal([]byte(metadataString), metadata)
+
 	if err != nil {
 		return err
 	}
-	field := reflect.ValueOf(metadata.ID).FieldByName(model.GetKind())
+	field := reflect.ValueOf(&metadata.ID).Elem().FieldByName(model.GetKind())
 	field.SetInt(int64(model.GetId()))
 
 	metadataValue, err := json.Marshal(metadata)
