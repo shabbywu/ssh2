@@ -11,5 +11,6 @@ func init() {
 	App.Commands = append(App.Commands, []*cli.Command{
 		getCommand,
 		applyCommand,
+		installCommand,
 	}...)
 }
