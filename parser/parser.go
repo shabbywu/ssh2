@@ -14,7 +14,6 @@ import (
 type DocumentRecord struct {
 	Kind string
 	Spec map[interface{}]interface{}
-	Ref  models.Ref
 }
 
 type YamlParser struct {

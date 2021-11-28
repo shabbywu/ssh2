@@ -24,11 +24,6 @@ type jsonDumpAble struct {
 	Spec interface{} `json:"spec,omitempty"yaml:"spec"`
 }
 
-type Ref struct {
-	Field string
-	Value interface{}
-}
-
 var kindTypeMap = map[string]reflect.Type{
 	"AuthMethod":   reflect.TypeOf(AuthMethod{}),
 	"ClientConfig": reflect.TypeOf(ClientConfig{}),
