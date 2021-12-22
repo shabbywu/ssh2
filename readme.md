@@ -265,10 +265,10 @@ spec:
             port: int
 ```
 ### 项目建模:
-**AuthMethod**: 连接服务器时, 进行身份验证的方法(PASSWORD、PUBLISH_KEY等)
-**ClientConfig**: 连接服务器时, 使用的身份信息(username), 关联着 AuthMethod
-**ServerConfig**: 连接的服务器信息, 包括(host、port)
-**Session**: ssh会话配置, 描述了使用哪个ClientConfig连接哪个ServerConfig的信息
+**AuthMethod**: 连接服务器时, 进行身份验证的方法(PASSWORD、PUBLISH_KEY等)   
+**ClientConfig**: 连接服务器时, 使用的身份信息(username), 关联着 AuthMethod   
+**ServerConfig**: 连接的服务器信息, 包括(host、port)   
+**Session**: ssh会话配置, 描述了使用哪个ClientConfig连接哪个ServerConfig的信息   
 项目整体结构:
 ```text
                                                                                              +--------------------+

@@ -8,7 +8,7 @@ from ssh2.models import create_dababases, get_engine
 
 
 def pytest_addoption(parser):
-    group = parser.getgroup("ssh2")
+    group = parser.getgroup("ssh-mgr")
     group._addoption(
         "--reuse-db",
         action="store_true",
