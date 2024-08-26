@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "ssh-mgr"
-version = "1.0.0"
+version = "1.0.1"
 description = "A Tool to manage ssh connection"
 
 license = "MIT"
 
 authors = [
-    "shabbywu <shabbywu@tencent.com>"
+    "shabbywu <shabbywu@qq.com>"
 ]
 
 readme = 'README.md'  # Markdown files are supported
@@ -19,12 +19,12 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"  # Compatible python versions must be declared here
+python = "^3.8"  # Compatible python versions must be declared here
 click = ">=7.0"
-PyYaml = "==5.1.2"
-sqlalchemy = "==1.3.10"
-cryptography = "==2.8"
-aenum = "==2.2.2"
+PyYaml = "6.0.2"
+sqlalchemy = "<2"
+cryptography = "*"
+aenum = "<3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.0"
