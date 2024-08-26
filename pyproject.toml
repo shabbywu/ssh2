@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ssh-mgr"
-version = "1.0.1"
+version = "1.1.0"
 description = "A Tool to manage ssh connection"
 
 license = "MIT"
@@ -25,10 +25,11 @@ PyYaml = "6.0.2"
 sqlalchemy = "<2"
 cryptography = "*"
 aenum = "<3"
+six = "*"
 
 [tool.poetry.dev-dependencies]
-pytest = "^3.0"
-pytest-cov = "^2.4"
+pytest = "*"
+pytest-cov = "*"
 
 [tool.poetry.extras]
 ioa = ["ssh2-ioa"]
