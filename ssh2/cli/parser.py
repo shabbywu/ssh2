@@ -22,7 +22,7 @@ AttrKindMapper = {"auth": AuthMethod, "client": ClientConfig, "server": ServerCo
 
 class YamlParser:
     def __init__(self, doc: str):
-        self.documents = yaml.load_all(doc)
+        self.documents = yaml.safe_load_all(doc)
 
     def parse(self):
         res = []
