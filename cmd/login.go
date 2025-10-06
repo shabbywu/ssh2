@@ -17,13 +17,13 @@ var execCommand = &cli.Command{
 	ArgsUsage: "[Session Tag]",
 	Before: func(ctx *cli.Context) error {
 		if ctx.NArg() != 1 {
-			cli.ShowCommandHelp(ctx, ctx.Command.Name)
-			objs := models.List[interface{}]("Session")
+			cli.ShowCommandHelp(ctx, "login")
+			objs := models.List[models.Session]("Session")
 			fmt.Println("avaialbe sessions:")
 			for _, session := range objs {
-				fmt.Println(session)
+				fmt.Printf("- %s\n", session.Tag)
 			}
-			return fmt.Errorf("require session tag")
+			os.Exit(1)
 		}
 		return nil
 	},
