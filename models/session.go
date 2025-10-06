@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"errors"
 )
 
 type Session struct {
@@ -23,27 +22,19 @@ func (s *Session) ToJson() ([]byte, error) {
 }
 
 func (s *Session) GetClientConfig() (*ClientConfig, error) {
-	ptr, err := GetByField("ClientConfig", "id", s.ClientConfigId)
+	ptr, err := GetByField[ClientConfig]("ClientConfig", "id", s.ClientConfigId)
 	if err != nil {
 		return nil, err
 	}
-	obj, ok := ptr.(*ClientConfig)
-	if !ok {
-		return nil, errors.New("非法的 ClientConfig 结构体")
-	}
-	return obj, nil
+	return &ptr, nil
 }
 
 func (s *Session) GetServerConfig() (*ServerConfig, error) {
-	ptr, err := GetByField("ServerConfig", "id", s.ServerConfigId)
+	ptr, err := GetByField[ServerConfig]("ServerConfig", "id", s.ServerConfigId)
 	if err != nil {
 		return nil, err
 	}
-	obj, ok := ptr.(*ServerConfig)
-	if !ok {
-		return nil, errors.New("非法的 ServerConfig 结构体")
-	}
-	return obj, nil
+	return &ptr, nil
 }
 
 func (s *Session) GetId() int {

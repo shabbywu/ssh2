@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/urfave/cli/v2"
 	"io"
 	"log"
@@ -11,22 +12,29 @@ import (
 )
 
 var execCommand = &cli.Command{
-	Name:  "login",
-	Usage: "登录服务器",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:     "tag",
-			Required: true,
-		},
+	Name:      "login",
+	Usage:     "登录服务器",
+	ArgsUsage: "[Session Tag]",
+	Before: func(ctx *cli.Context) error {
+		if ctx.NArg() != 1 {
+			cli.ShowCommandHelp(ctx, ctx.Command.Name)
+			objs := models.List[interface{}]("Session")
+			fmt.Println("avaialbe sessions:")
+			for _, session := range objs {
+				fmt.Println(session)
+			}
+			return fmt.Errorf("require session tag")
+		}
+		return nil
 	},
 	Action: func(ctx *cli.Context) error {
-		model, err := models.GetByField("Session", "tag", ctx.Value("tag"))
+		tag := ctx.Args().First()
+		session, err := models.GetByField[models.Session]("Session", "tag", tag)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		session := model.(*models.Session)
-		cmds, err := integrated.GetLoginCommands(session)
+		cmds, err := integrated.GetLoginCommands(&session)
 
 		if err != nil {
 			return err
