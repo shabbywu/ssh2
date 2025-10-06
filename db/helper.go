@@ -46,7 +46,7 @@ func GetByField(kind, field, value interface{}) (result string, err error) {
 		})
 	})
 	if result == "" {
-		return "", buntdb.ErrNotFound
+		return "", fmt.Errorf("field %s=%s not exists", field, value)
 	}
 	return result, err
 }
