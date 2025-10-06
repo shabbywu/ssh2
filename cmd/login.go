@@ -1,22 +1,13 @@
-//go:build !windows
-// +build !windows
-
 package cmd
 
 import (
-	"fmt"
-	"github.com/creack/pty"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/term"
 	"io"
 	"log"
 	"os"
-	"os/exec"
-	"os/signal"
 	"ssh2/integrated"
 	"ssh2/models"
-	"ssh2/utils/tempfile"
-	"syscall"
+	"ssh2/plugins"
 )
 
 var execCommand = &cli.Command{
@@ -30,55 +21,32 @@ var execCommand = &cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		model, err := models.GetByField("Session", "tag", ctx.Value("tag"))
-
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		m := tempfile.GetManager("")
-		defer m.Clean()
-
 		session := model.(*models.Session)
-		file, err := integrated.ToExpectFile(session)
+		cmds, err := integrated.GetLoginCommands(session)
+
 		if err != nil {
 			return err
 		}
-		fmt.Printf("file: %s\n", file)
+		cp, err := plugins.NewConsole()
+		defer cp.Close()
 
-		// Create arbitrary command.
-		c := exec.Command("expect", "-f", file)
-
-		// Start the command with a pty.
-		ptmx, err := pty.Start(c)
-		if err != nil {
-			return err
-		}
-		// Make sure to close the pty at the end.
-		defer func() { _ = ptmx.Close() }() // Best effort.
-
-		// Handle pty size.
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, syscall.SIGWINCH)
-		go func() {
-			for range ch {
-				if err := pty.InheritSize(os.Stdin, ptmx); err != nil {
-					log.Printf("error resizing pty: %s", err)
-				}
+		for _, cmd := range cmds {
+			if err := cmd(cp); err != nil {
+				log.Fatal(err)
 			}
-		}()
-		ch <- syscall.SIGWINCH // Initial resize.
-
-		// Set stdin in raw mode.
-		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-		if err != nil {
-			panic(err)
 		}
-		defer func() { _ = term.Restore(int(os.Stdin.Fd()), oldState) }() // Best effort.
 
 		// Copy stdin to the pty and the pty to stdout.
 		// NOTE: The goroutine will keep reading until the next keystroke before returning.
-		go func() { _, _ = io.Copy(ptmx, os.Stdin) }()
-		_, _ = io.Copy(os.Stdout, ptmx)
+		go func() { _, _ = io.Copy(cp.Pty.InPipe(), os.Stdin) }()
+		go func() { _, _ = io.Copy(os.Stdout, cp.Pty.OutPipe()) }()
+		if err = cp.Wait(); err != nil {
+			log.Fatal(err)
+		}
 
 		return nil
 	},
