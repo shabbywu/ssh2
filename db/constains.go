@@ -22,8 +22,3 @@ const (
 	// MetaData Field
 	MetaDataKey = "MetaData"
 )
-
-var (
-	// 数据库路径
-	DbPath = "~/.ssh/ssh2/db.bin"
-)
