@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"github.com/ActiveState/termtest/expect"
+	"github.com/tidwall/gjson"
 	"os"
 	"os/exec"
 	"ssh2/models"
@@ -30,15 +31,15 @@ type ExpectAble interface {
 	ToExpectCommand(session *models.Session) (func(cp *Console) error, error)
 }
 
-var handlers = map[string]func(args interface{}) ExpectAble{}
+var handlers = map[string]func(args gjson.Result) ExpectAble{}
 
-func Register(kind string, parser func(args interface{}) ExpectAble) {
+func Register(kind string, parser func(args gjson.Result) ExpectAble) {
 	handlers[kind] = parser
 }
 
-func Parse(p Plugin) ExpectAble {
-	if parser, ok := handlers[p.Kind]; ok {
-		return parser(p.Args)
+func Parse(p gjson.Result) ExpectAble {
+	if parser, ok := handlers[p.Get("kind").Str]; ok {
+		return parser(p.Get("args"))
 	}
 	return nil
 }

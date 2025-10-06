@@ -3,6 +3,7 @@ package plugins
 import (
 	"errors"
 	"fmt"
+	"github.com/tidwall/gjson"
 	"os/exec"
 	"ssh2/models"
 	"strconv"
@@ -62,7 +63,7 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *Cons
 	}
 }
 
-func ParseSSHPlugin(args interface{}) ExpectAble {
+func ParseSSHPlugin(args gjson.Result) ExpectAble {
 	return &SSHPlugin{}
 }
 
