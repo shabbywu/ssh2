@@ -4,3 +4,6 @@ ssh2.egg-info/
 .mypy_cache
 dist
 build
+ssh2
+ssh2.exe
+db.bin
