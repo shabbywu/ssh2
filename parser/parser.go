@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-//DocumentRecord: 序列化到文档的模型
+// DocumentRecord: 序列化到文档的模型
 type DocumentRecord struct {
 	Kind string
 	Spec map[interface{}]interface{}
@@ -164,7 +164,7 @@ func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 			// 处理使用 ref 引用的逻辑
 			if _ref := objDefinition["ref"]; _ref != nil {
 				ref := _ref.(map[interface{}]interface{})
-				obj, _ := models.GetByField(kind, ref["field"].(string), ref["value"])
+				obj, _ := models.GetByField[interface{}](kind, ref["field"].(string), ref["value"])
 				if instance, ok := obj.(models.Model); ok {
 					// 替换属性成外键字段
 					delete(spec, attr)

@@ -15,7 +15,7 @@ var getCommand = &cli.Command{
 		&cli.StringFlag{
 			Name:     "template",
 			Required: false,
-			Value:    "{{ .Tag }}",
+			Value:    "{{ .tag }}",
 		},
 		&cli.StringFlag{
 			Name:     "kind",
@@ -25,16 +25,15 @@ var getCommand = &cli.Command{
 	},
 	Action: func(ctx *cli.Context) (err error) {
 		kind := ctx.Value("kind").(string)
-		objs := models.List(kind)
+		objs := models.List[interface{}](kind)
 
 		if objs == nil {
 			return cli.Exit("not found.", 0)
 		}
 
-		templator, _ := template.New("template").Parse(ctx.Value("template").(string))
-
+		template, _ := template.New("template").Parse(ctx.Value("template").(string))
 		for _, obj := range objs {
-			_ = templator.Execute(os.Stdout, obj)
+			_ = template.Execute(os.Stdout, obj)
 			os.Stdout.Write([]byte("\n"))
 		}
 		return nil

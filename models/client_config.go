@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"errors"
 )
 
 type ClientConfig struct {
@@ -20,15 +19,11 @@ func (config *ClientConfig) ToJson() ([]byte, error) {
 }
 
 func (config *ClientConfig) GetAuthMethod() (*AuthMethod, error) {
-	ptr, err := GetByField("AuthMethod", "id", config.AuthMethodId)
+	ptr, err := GetByField[AuthMethod]("AuthMethod", "id", config.AuthMethodId)
 	if err != nil {
 		return nil, err
 	}
-	obj, ok := ptr.(*AuthMethod)
-	if !ok {
-		return nil, errors.New("非法的 AuthMethod 结构体")
-	}
-	return obj, nil
+	return &ptr, nil
 }
 
 func (config *ClientConfig) GetId() int {

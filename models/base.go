@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/tidwall/gjson"
 	"log"
-	"reflect"
 	"ssh2/db"
 )
 
@@ -18,28 +17,21 @@ type Model interface {
 	ToJson() ([]byte, error)
 }
 
-//jsonDumpAble: 将模型序列化到 json(数据库)
+// jsonDumpAble: 将模型序列化到 json(数据库)
 type jsonDumpAble struct {
 	Kind string      `json:"kind,omitempty"yaml:"kind"`
 	Spec interface{} `json:"spec,omitempty"yaml:"spec"`
 }
 
-var kindTypeMap = map[string]reflect.Type{
-	"AuthMethod":   reflect.TypeOf(AuthMethod{}),
-	"ClientConfig": reflect.TypeOf(ClientConfig{}),
-	"ServerConfig": reflect.TypeOf(ServerConfig{}),
-	"Session":      reflect.TypeOf(Session{}),
-}
-
-func List(kind string) []interface{} {
+func List[T interface{}](kind string) []T {
 	objs := db.List(kind)
-	var result []interface{}
+	var result []T
 
 	for _, content := range objs {
 		spec := gjson.Get(content, "spec").String()
-		obj, err := parseObj(kind, spec)
+		obj, err := parseObj[T](kind, spec)
 		if err == nil {
-			result = append(result, &obj)
+			result = append(result, obj)
 		} else {
 			log.Fatal(err)
 		}
@@ -48,23 +40,18 @@ func List(kind string) []interface{} {
 }
 
 // Get Single Object By Field
-func GetByField(kind string, field, value interface{}) (result interface{}, err error) {
+func GetByField[T interface{}](kind string, field, value interface{}) (result T, err error) {
 	content, err := db.GetByField(kind, field, value)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	spec := gjson.Get(content, "spec").String()
-	return parseObj(kind, spec)
+	return parseObj[T](kind, spec)
 }
 
-func parseObj(kind, spec string) (result interface{}, err error) {
-	t := kindTypeMap[kind]
-
-	instance := reflect.New(t)
-	ptr := instance.Interface()
-
-	if e := json.Unmarshal([]byte(spec), &ptr); e != nil {
-		return nil, errors.New(fmt.Sprintf("非法的 %s 结构体", kind))
+func parseObj[T interface{}](kind, spec string) (result T, err error) {
+	if e := json.Unmarshal([]byte(spec), &result); e != nil {
+		return result, errors.New(fmt.Sprintf("非法的 %s 结构体", kind))
 	}
-	return ptr, nil
+	return result, nil
 }
