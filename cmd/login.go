@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/term"
 	"log"
 	"os"
 	"ssh2/integrated"
@@ -47,6 +48,12 @@ var execCommand = &cli.Command{
 			}
 		}
 
+		// 将标准输入设置为原始模式
+		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer term.Restore(int(os.Stdin.Fd()), oldState)
 		go cp.CopyStdout(os.Stdout)
 		// Copy stdin to the pty and the pty to stdout.
 		// NOTE: The goroutine will keep reading until the next keystroke before returning.
