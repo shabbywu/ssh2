@@ -1,11 +1,9 @@
 package plugins
 
 import (
-	"github.com/ActiveState/termtest/expect"
 	"github.com/tidwall/gjson"
-	"os"
-	"os/exec"
 	"ssh2/models"
+	"ssh2/utils/console"
 )
 
 type Plugin struct {
@@ -13,22 +11,8 @@ type Plugin struct {
 	Args interface{}
 }
 
-type Console struct {
-	Children []*exec.Cmd
-	*expect.Console
-}
-
-func (c *Console) Wait() error {
-	for _, child := range c.Children {
-		if err := child.Wait(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 type ExpectAble interface {
-	ToExpectCommand(session *models.Session) (func(cp *Console) error, error)
+	ToExpectCommand(session *models.Session) (func(cp *console.Console) error, error)
 }
 
 var handlers = map[string]func(args gjson.Result) ExpectAble{}
@@ -42,9 +26,4 @@ func Parse(p gjson.Result) ExpectAble {
 		return parser(p.Get("args"))
 	}
 	return nil
-}
-
-func NewConsole() (*Console, error) {
-	cp, err := expect.NewConsole(expect.WithStdout(os.Stdout))
-	return &Console{Console: cp}, err
 }

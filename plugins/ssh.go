@@ -6,6 +6,7 @@ import (
 	"github.com/tidwall/gjson"
 	"os/exec"
 	"ssh2/models"
+	"ssh2/utils/console"
 	"strconv"
 	"time"
 )
@@ -13,7 +14,7 @@ import (
 type SSHPlugin struct {
 }
 
-func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *Console) error, error) {
+func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *console.Console) error, error) {
 	clientConfig, err := session.GetClientConfig()
 	if err != nil {
 		return nil, err
@@ -30,7 +31,7 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *Cons
 
 	switch auth.Type {
 	case models.AuthPassword:
-		return func(cp *Console) error {
+		return func(cp *console.Console) error {
 			loginCmd := exec.Command("ssh", "-p", strconv.Itoa(serverConfig.Port), userHost)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
@@ -50,7 +51,7 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *Cons
 		fallthrough
 	case models.AUthPublishKeyFile:
 		publishKeyPath := auth.GetPublishKeyPath()
-		return func(cp *Console) error {
+		return func(cp *console.Console) error {
 			loginCmd := exec.Command("ssh", "-p", strconv.Itoa(serverConfig.Port), userHost, "-i", publishKeyPath)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {

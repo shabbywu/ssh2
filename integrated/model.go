@@ -4,9 +4,10 @@ import (
 	"github.com/tidwall/gjson"
 	"ssh2/models"
 	"ssh2/plugins"
+	"ssh2/utils/console"
 )
 
-func GetLoginCommands(s *models.Session) (cmds []func(cp *plugins.Console) error, err error) {
+func GetLoginCommands(s *models.Session) (cmds []func(cp *console.Console) error, err error) {
 	ps, err := getPlugins(s)
 	if err != nil {
 		return nil, err

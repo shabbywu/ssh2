@@ -3,12 +3,11 @@ package cmd
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
-	"io"
 	"log"
 	"os"
 	"ssh2/integrated"
 	"ssh2/models"
-	"ssh2/plugins"
+	"ssh2/utils/console"
 )
 
 var execCommand = &cli.Command{
@@ -39,7 +38,7 @@ var execCommand = &cli.Command{
 		if err != nil {
 			return err
 		}
-		cp, err := plugins.NewConsole()
+		cp, err := console.NewConsole()
 		defer cp.Close()
 
 		for _, cmd := range cmds {
@@ -48,10 +47,9 @@ var execCommand = &cli.Command{
 			}
 		}
 
+		go cp.CopyStdout(os.Stdout)
 		// Copy stdin to the pty and the pty to stdout.
 		// NOTE: The goroutine will keep reading until the next keystroke before returning.
-		go func() { _, _ = io.Copy(cp.Pty.InPipe(), os.Stdin) }()
-		go func() { _, _ = io.Copy(os.Stdout, cp.Pty.OutPipe()) }()
 		if err = cp.Wait(); err != nil {
 			log.Fatal(err)
 		}
