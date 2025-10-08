@@ -164,13 +164,13 @@ func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 			// 处理使用 ref 引用的逻辑
 			if _ref := objDefinition["ref"]; _ref != nil {
 				ref := _ref.(map[interface{}]interface{})
-				obj, _ := models.GetByField[interface{}](kind, ref["field"].(string), ref["value"])
+				obj, _ := models.GetByFieldGeneric(kind, ref["field"].(string), ref["value"])
 				if instance, ok := obj.(models.Model); ok {
 					// 替换属性成外键字段
 					delete(spec, attr)
 					spec[attrToFullKey[attr]] = instance.GetId()
 				} else {
-					log.Fatal(errors.New("404 Not Found"))
+					log.Fatal(fmt.Errorf("can't find model with kind=%s where %s=%s, detail: %s", kind, ref["field"], ref["value"], obj))
 				}
 			} else {
 				// 递归解析属性

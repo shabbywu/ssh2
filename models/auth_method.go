@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"ssh2/utils/tempfile"
 )
@@ -8,7 +9,7 @@ import (
 const (
 	AuthPassword            string = "PASSWORD"
 	AUthPublishKeyFile      string = "PUBLISH_KEY_PATH"
-	AuthPublishKey          string = "PUBLISH_KEY"
+	AuthPublishKey          string = "PUBLISH_KEY_CONTENT"
 	AUthInteractivePassword string = "INTERACTIVE_PASSWORD"
 )
 
@@ -51,10 +52,12 @@ func (auth *AuthMethod) GetPublishKeyPath() string {
 			panic(err)
 		}
 		defer file.Close()
-		file.WriteString(content)
+		if o, err := base64.StdEncoding.DecodeString(content); err == nil {
+			file.Write(o)
+		} else {
+			file.WriteString(content)
+		}
 		return file.Name()
-		// TODO: 写到临时文件
-		return content
 	} else {
 		return content
 	}

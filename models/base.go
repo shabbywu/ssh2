@@ -55,3 +55,21 @@ func parseObj[T interface{}](kind, spec string) (result T, err error) {
 	}
 	return result, nil
 }
+
+func GetByFieldGeneric(kind string, field, value interface{}) (result db.Model, err error) {
+	switch kind {
+	case "AuthMethod":
+		obj, err := GetByField[AuthMethod](kind, field, value)
+		return &obj, err
+	case "ClientConfig":
+		obj, err := GetByField[ClientConfig](kind, field, value)
+		return &obj, err
+	case "ServerConfig":
+		obj, err := GetByField[ServerConfig](kind, field, value)
+		return &obj, err
+	case "Session":
+		obj, err := GetByField[Session](kind, field, value)
+		return &obj, err
+	}
+	return nil, fmt.Errorf("unknown kind: %s", kind)
+}
