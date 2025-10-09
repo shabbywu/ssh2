@@ -54,6 +54,7 @@ var execCommand = &cli.Command{
 			log.Fatal(err)
 		}
 		defer term.Restore(int(os.Stdin.Fd()), oldState)
+		go cp.MonitorTerminalSize()
 		go cp.CopyStdout(os.Stdout)
 		// Copy stdin to the pty and the pty to stdout.
 		// NOTE: The goroutine will keep reading until the next keystroke before returning.

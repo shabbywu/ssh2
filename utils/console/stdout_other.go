@@ -3,9 +3,13 @@
 
 package console
 
-import "io"
+import (
+	"io"
+	"os"
+)
 
 func (c *Console) CopyStdout(dest io.Writer) error {
-	_, _ = io.Copy(dest, c.Tty())
+	file := os.NewFile(c.Pty.TerminalOutFd(), "stdout")
+	_, _ = io.Copy(dest, file)
 	return nil
 }
