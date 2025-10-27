@@ -5,11 +5,8 @@ package console
 
 import (
 	"io"
-	"os"
 )
 
-func (c *Console) CopyStdout(dest io.Writer) error {
-	file := os.NewFile(c.Pty.TerminalOutFd(), "stdout")
-	_, _ = io.Copy(dest, file)
-	return nil
+func (c *Console) GetStdout() io.Reader {
+	return c.Tty()
 }

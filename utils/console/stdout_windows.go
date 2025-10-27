@@ -5,7 +5,6 @@ package console
 
 import "io"
 
-func (c *Console) CopyStdout(dest io.Writer) error {
-	_, _ = io.Copy(dest, c.Pty.OutPipe())
-	return nil
+func (c *Console) GetStdout() io.Reader {
+	return c.Pty.OutPipe()
 }

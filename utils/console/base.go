@@ -2,19 +2,17 @@ package console
 
 import (
 	"github.com/ActiveState/termtest/expect"
-	"os"
 	"os/exec"
 )
 
 type Console struct {
 	Children []*exec.Cmd
 	*expect.Console
-	closed chan interface{}
 }
 
 func NewConsole() (*Console, error) {
-	cp, err := expect.NewConsole(expect.WithStdin(os.Stdin))
-	return &Console{Console: cp, closed: make(chan interface{})}, err
+	cp, err := expect.NewConsole()
+	return &Console{Console: cp}, err
 }
 
 func (c *Console) Wait() error {
@@ -24,9 +22,4 @@ func (c *Console) Wait() error {
 		}
 	}
 	return nil
-}
-
-func (c *Console) Close() error {
-	close(c.closed)
-	return c.Console.Close()
 }

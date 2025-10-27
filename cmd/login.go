@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/iyzyi/aiopty/term"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/term"
+	"io"
 	"log"
 	"os"
 	"ssh2/integrated"
@@ -47,22 +48,23 @@ var execCommand = &cli.Command{
 				log.Fatal(err)
 			}
 		}
+		
+		// When the terminal window size changes, synchronize the size of the pty
+		onSizeChange := func(cols, rows uint16) {
+			cp.Pty.Resize(cols, rows)
+		}
 
-		// 将标准输入设置为原始模式
-		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+		// enable terminal
+		t, err := term.Open(os.Stdin, os.Stdout, onSizeChange)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		defer term.Restore(int(os.Stdin.Fd()), oldState)
-		go cp.MonitorTerminalSize()
-		go cp.CopyStdout(os.Stdout)
-		// Copy stdin to the pty and the pty to stdout.
-		// NOTE: The goroutine will keep reading until the next keystroke before returning.
-		if err = cp.Wait(); err != nil {
-			log.Fatal(err)
-		}
+		defer t.Close()
 
-		return nil
+		// start data exchange between terminal and pty
+		go func() { io.Copy(t, cp.GetStdout()) }()
+		go func() { io.Copy(cp, t) }()
+		return cp.Wait()
 	},
 }
 
