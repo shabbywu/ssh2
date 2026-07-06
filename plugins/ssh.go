@@ -8,7 +8,6 @@ import (
 	"ssh2/models"
 	"ssh2/utils/console"
 	"strconv"
-	"time"
 )
 
 type SSHPlugin struct {
@@ -21,6 +20,17 @@ var defaultSSHOptions = []string{
 	"-o", "StrictHostKeyChecking=accept-new",
 	"-o", "ServerAliveInterval=15",
 	"-o", "ServerAliveCountMax=2",
+}
+
+var passwordAuthSSHOptions = []string{
+	"-o", "PreferredAuthentications=password,keyboard-interactive",
+	"-o", "PubkeyAuthentication=no",
+	"-o", "PasswordAuthentication=yes",
+	"-o", "KbdInteractiveAuthentication=yes",
+	"-o", "IdentitiesOnly=yes",
+	"-o", "IdentityAgent=none",
+	"-o", "ControlPath=none",
+	"-o", "NumberOfPasswordPrompts=1",
 }
 
 var keyAuthSSHOptions = []string{
@@ -73,7 +83,7 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 			if err != nil {
 				return err
 			}
-			loginCmd := sshCommand(serverConfig.Port, userHost)
+			loginCmd := sshCommand(serverConfig.Port, userHost, passwordAuthSSHOptions...)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
 				return err
@@ -82,7 +92,6 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 			if err != nil {
 				return expectError(auth.ExpectForPassword, output, err)
 			}
-			time.Sleep(1)
 			if _, err := cp.Send(password + "\r"); err != nil {
 				return fmt.Errorf("failed when send password, detail: %s", err)
 			}
@@ -91,7 +100,7 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 		}, nil
 	case models.AUthInteractivePassword:
 		return func(cp *console.Console) error {
-			loginCmd := sshCommand(serverConfig.Port, userHost)
+			loginCmd := sshCommand(serverConfig.Port, userHost, passwordAuthSSHOptions...)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
 				return err

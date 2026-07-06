@@ -43,6 +43,26 @@ func TestSSHCommandIncludesKeyAuthOptions(t *testing.T) {
 	}
 }
 
+func TestSSHCommandIncludesPasswordAuthOptions(t *testing.T) {
+	passwordArgs := append([]string{}, passwordAuthSSHOptions...)
+	cmd := sshCommand(22, "root@example.com", passwordArgs...)
+
+	for _, expected := range []string{
+		"PreferredAuthentications=password,keyboard-interactive",
+		"PubkeyAuthentication=no",
+		"PasswordAuthentication=yes",
+		"KbdInteractiveAuthentication=yes",
+		"IdentitiesOnly=yes",
+		"IdentityAgent=none",
+		"ControlPath=none",
+		"NumberOfPasswordPrompts=1",
+	} {
+		if !containsArgValue(cmd.Args, expected) {
+			t.Fatalf("ssh args %#v missing %q", cmd.Args, expected)
+		}
+	}
+}
+
 func containsArgValue(args []string, value string) bool {
 	for _, arg := range args {
 		if arg == value {

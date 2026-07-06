@@ -89,6 +89,10 @@ var execCommand = &cli.Command{
 			}
 		}
 
+		stopSignals()
+		stopInteractiveSignals := forwardInteractiveInterrupts(cp)
+		defer stopInteractiveSignals()
+
 		// When the terminal window size changes, synchronize the size of the pty
 		onSizeChange := func(cols, rows uint16) {
 			cp.Pty.Resize(cols, rows)
@@ -107,6 +111,9 @@ var execCommand = &cli.Command{
 		if err := cp.Wait(); err != nil {
 			if interruptErr := loginInterruptError(tag, interrupted); interruptErr != nil {
 				return interruptErr
+			}
+			if isInteractiveInterruptExit(err) {
+				return nil
 			}
 			return fmt.Errorf("login %q ssh process exited: %w", tag, err)
 		}
@@ -224,8 +231,10 @@ func handleLoginSignals(cp *console.Console) (<-chan os.Signal, func()) {
 			case interrupted <- sig:
 			default:
 			}
-			cp.KillChildren()
-			_ = cp.Close()
+			if cp != nil {
+				cp.KillChildren()
+				_ = cp.Close()
+			}
 		})
 	}
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
@@ -236,10 +245,45 @@ func handleLoginSignals(cp *console.Console) (<-chan os.Signal, func()) {
 		case <-done:
 		}
 	}()
+	var stopOnce sync.Once
 	return interrupted, func() {
-		signal.Stop(signals)
-		close(done)
+		stopOnce.Do(func() {
+			signal.Stop(signals)
+			close(done)
+		})
 	}
+}
+
+func forwardInteractiveInterrupts(w io.Writer) func() {
+	const interruptByte = byte(0x03)
+
+	signals := make(chan os.Signal, 1)
+	done := make(chan struct{})
+	signal.Notify(signals, os.Interrupt)
+	go func() {
+		for {
+			select {
+			case <-signals:
+				if w != nil {
+					_, _ = w.Write([]byte{interruptByte})
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
+	var stopOnce sync.Once
+	return func() {
+		stopOnce.Do(func() {
+			signal.Stop(signals)
+			close(done)
+		})
+	}
+}
+
+func isInteractiveInterruptExit(err error) bool {
+	exitErr, ok := err.(*osexec.ExitError)
+	return ok && exitErr.ExitCode() == 130
 }
 
 func loginInterruptError(tag string, interrupted <-chan os.Signal) error {

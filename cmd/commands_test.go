@@ -74,6 +74,18 @@ func TestWrapperKeepsGo2S(t *testing.T) {
 	}
 }
 
+func TestHandleLoginSignalsStopIsIdempotent(t *testing.T) {
+	_, stopSignals := handleLoginSignals(nil)
+	stopSignals()
+	stopSignals()
+}
+
+func TestForwardInteractiveInterruptsStopIsIdempotent(t *testing.T) {
+	stopSignals := forwardInteractiveInterrupts(nil)
+	stopSignals()
+	stopSignals()
+}
+
 func TestGetWrapperPathCommandInstallsWrapper(t *testing.T) {
 	originalHome := utils.SSH2_HOME
 	utils.SSH2_HOME = t.TempDir()
