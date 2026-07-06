@@ -17,6 +17,7 @@ type DocumentRecord struct {
 }
 
 type YamlParser struct {
+	ResolveRef func(kind, field string, value interface{}) (models.Model, error)
 }
 
 func parseIdField(spec map[interface{}]interface{}) (id int, err error) {
@@ -115,6 +116,25 @@ func boolField(spec map[interface{}]interface{}, name string) bool {
 	}
 }
 
+func normalizeYAMLValue(value interface{}) interface{} {
+	switch v := value.(type) {
+	case map[interface{}]interface{}:
+		normalized := map[string]interface{}{}
+		for key, item := range v {
+			normalized[fmt.Sprint(key)] = normalizeYAMLValue(item)
+		}
+		return normalized
+	case []interface{}:
+		normalized := make([]interface{}, 0, len(v))
+		for _, item := range v {
+			normalized = append(normalized, normalizeYAMLValue(item))
+		}
+		return normalized
+	default:
+		return value
+	}
+}
+
 func parseClientConfig(spec map[interface{}]interface{}) (models.Model, error) {
 	var parsed = &models.ClientConfig{}
 
@@ -154,16 +174,11 @@ func parseSession(spec map[interface{}]interface{}) (models.Model, error) {
 		return parsed, err
 	}
 
-	var plugins []map[string]interface{}
+	var plugins []interface{}
 	rawPlugins := spec["plugins"].([]interface{})
 
 	for _, data := range rawPlugins {
-		m := map[string]interface{}{}
-		d := data.(map[interface{}]interface{})
-		for k, v := range d {
-			m[k.(string)] = v
-		}
-		plugins = append(plugins, m)
+		plugins = append(plugins, normalizeYAMLValue(data))
 	}
 
 	pluginsBytes, err := json.Marshal(plugins)
@@ -207,16 +222,21 @@ func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 			// 处理使用 ref 引用的逻辑
 			if _ref := objDefinition["ref"]; _ref != nil {
 				ref := _ref.(map[interface{}]interface{})
-				obj, err := models.GetByFieldGeneric(kind, ref["field"].(string), ref["value"])
+				field := ref["field"].(string)
+				value := ref["value"]
+				obj, err := models.GetByFieldGeneric(kind, field, value)
+				if err != nil && p.ResolveRef != nil {
+					obj, err = p.ResolveRef(kind, field, value)
+				}
 				if err != nil {
-					return nil, fmt.Errorf("can't find model with kind=%s where %s=%s: %w", kind, ref["field"], ref["value"], err)
+					return nil, fmt.Errorf("can't find model with kind=%s where %s=%s: %w", kind, field, value, err)
 				}
 				if instance, ok := obj.(models.Model); ok {
 					// 替换属性成外键字段
 					delete(spec, attr)
 					spec[attrToFullKey[attr]] = instance.GetId()
 				} else {
-					return nil, fmt.Errorf("can't find model with kind=%s where %s=%s, detail: %s", kind, ref["field"], ref["value"], obj)
+					return nil, fmt.Errorf("can't find model with kind=%s where %s=%s, detail: %s", kind, field, value, obj)
 				}
 			} else {
 				// 递归解析属性

@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/urfave/cli/v2"
+	"ssh2/models"
 	"ssh2/utils"
 )
 
@@ -78,5 +80,67 @@ func TestApplyCommandReturnsYamlErrors(t *testing.T) {
 	err = app.Run([]string{"ssh2", "apply", "-f", file.Name()})
 	if err == nil {
 		t.Fatal("expected invalid YAML to return an error")
+	}
+}
+
+func TestApplyCommandResolvesSiblingYamlRef(t *testing.T) {
+	dir := t.TempDir()
+	suffix := filepath.Base(dir)
+	clientName := "cmd-test-client-" + suffix
+	authName := "cmd-test-auth-" + suffix
+	serverName := "cmd-test-server-" + suffix
+	sessionTag := "cmd-test-session-" + suffix
+
+	clientFile := filepath.Join(dir, "client.yaml")
+	if err := os.WriteFile(clientFile, []byte(fmt.Sprintf(`
+kind: ClientConfig
+spec:
+  name: %s
+  user: tester
+  auth:
+    spec:
+      name: %s
+      type: INTERACTIVE_PASSWORD
+      expect_for_password: "password:"
+`, clientName, authName)), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	sessionFile := filepath.Join(dir, "session.yaml")
+	if err := os.WriteFile(sessionFile, []byte(fmt.Sprintf(`
+kind: Session
+spec:
+  tag: %s
+  name: %s
+  plugins:
+    - kind: EXPECT
+      args:
+        expect: Password
+        send: "secret"
+  client:
+    ref:
+      field: name
+      value: %s
+  server:
+    spec:
+      name: %s
+      host: 127.0.0.1
+      port: 22
+`, sessionTag, serverName, clientName, serverName)), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{applyCommand}
+	if err := app.Run([]string{"ssh2", "apply", "-f", sessionFile}); err != nil {
+		t.Fatal(err)
+	}
+
+	session, err := models.GetByField[models.Session]("Session", "tag", sessionTag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if session.ClientConfigId == 0 {
+		t.Fatal("session was not linked to sibling client config")
 	}
 }
