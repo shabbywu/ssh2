@@ -7,10 +7,13 @@ import (
 	"github.com/urfave/cli/v2"
 	"io"
 	"os"
+	osexec "os/exec"
 	"os/signal"
 	"ssh2/integrated"
 	"ssh2/models"
+	"ssh2/plugins"
 	"ssh2/utils/console"
+	"strings"
 	"sync"
 	"syscall"
 )
@@ -23,6 +26,15 @@ var execCommand = &cli.Command{
 		&cli.StringFlag{
 			Name:  "tag",
 			Usage: "session tag",
+		},
+		&cli.BoolFlag{
+			Name:    "dry-run",
+			Aliases: []string{"print"},
+			Usage:   "print ssh command and expect steps without connecting",
+		},
+		&cli.BoolFlag{
+			Name:  "direct",
+			Usage: "use system ssh directly; skip ssh2 pty and EXPECT automation",
 		},
 	},
 	Before: func(ctx *cli.Context) error {
@@ -45,6 +57,14 @@ var execCommand = &cli.Command{
 		session, err := models.GetByField[models.Session]("Session", "tag", tag)
 		if err != nil {
 			return fmt.Errorf("session %q not found: %w", tag, err)
+		}
+
+		if ctx.Bool("dry-run") {
+			return printManualLogin(&session, ctx.Bool("direct"))
+		}
+
+		if ctx.Bool("direct") {
+			return runDirectLogin(&session)
 		}
 
 		cmds, err := integrated.GetLoginCommands(&session)
@@ -92,6 +112,105 @@ var execCommand = &cli.Command{
 		}
 		return nil
 	},
+}
+
+func runDirectLogin(session *models.Session) error {
+	step, err := plugins.SSHManualStep(session)
+	if err != nil {
+		return err
+	}
+	if step.Cleanup != nil {
+		defer step.Cleanup()
+	}
+	if len(step.Command) == 0 {
+		return fmt.Errorf("session %q has no ssh command", session.Tag)
+	}
+	cmd := osexec.Command(step.Command[0], step.Command[1:]...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		if exitErr, ok := err.(*osexec.ExitError); ok {
+			return cli.Exit(fmt.Sprintf("direct ssh exited with status %d", exitErr.ExitCode()), exitErr.ExitCode())
+		}
+		return err
+	}
+	return nil
+}
+
+func printManualLogin(session *models.Session, direct bool) error {
+	var steps []plugins.ManualStep
+	var err error
+	if direct {
+		step, err := plugins.SSHManualStep(session)
+		if err != nil {
+			return err
+		}
+		steps = []plugins.ManualStep{step}
+	} else {
+		steps, err = integrated.GetManualSteps(session)
+	}
+	if err != nil {
+		return err
+	}
+	for i, step := range steps {
+		fmt.Printf("# step %d: %s\n", i+1, step.Kind)
+		if len(step.Command) > 0 {
+			if step.CleanupPath != "" {
+				fmt.Println("(")
+				fmt.Printf("  ssh2_key_file=%s\n", shellQuote(step.CleanupPath))
+				fmt.Println("  trap 'rm -f \"$ssh2_key_file\"' EXIT INT TERM HUP")
+				fmt.Printf("  %s\n", shellQuoteCommandWithRaw(step.Command, map[string]string{
+					step.CleanupPath: "\"$ssh2_key_file\"",
+				}))
+				fmt.Println(")")
+				fmt.Println("# note: temporary key file is removed when the subshell exits")
+			} else {
+				fmt.Println(shellQuoteCommand(step.Command))
+			}
+		}
+		if step.Expect != "" {
+			fmt.Printf("expect: %q\n", step.Expect)
+		}
+		if step.Send != "" {
+			fmt.Printf("send:   %q\n", step.Send)
+		}
+		if step.Note != "" {
+			fmt.Printf("# note: %s\n", step.Note)
+		}
+		if i != len(steps)-1 {
+			fmt.Println()
+		}
+	}
+	return nil
+}
+
+func shellQuoteCommand(args []string) string {
+	return shellQuoteCommandWithRaw(args, nil)
+}
+
+func shellQuoteCommandWithRaw(args []string, raw map[string]string) string {
+	quoted := make([]string, 0, len(args))
+	for _, arg := range args {
+		if value, ok := raw[arg]; ok {
+			quoted = append(quoted, value)
+		} else {
+			quoted = append(quoted, shellQuote(arg))
+		}
+	}
+	return strings.Join(quoted, " ")
+}
+
+func shellQuote(arg string) string {
+	if arg == "" {
+		return "''"
+	}
+	if strings.IndexFunc(arg, func(r rune) bool {
+		return !(r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || strings.ContainsRune("@%_+=:,./-", r))
+	}) == -1 {
+		return arg
+	}
+	return "'" + strings.ReplaceAll(arg, "'", "'\"'\"'") + "'"
 }
 
 func handleLoginSignals(cp *console.Console) (<-chan os.Signal, func()) {

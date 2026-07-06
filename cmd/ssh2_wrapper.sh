@@ -14,22 +14,14 @@ function ssh2_verify_go2s_ssh_tag {
 }
 
 function go2s {
-    typeset -a in_args
-    typeset -a out_args
-
-    in_args=( "$@" )
-
-    if [ -n "$ZSH_VERSION" ]
+    typeset direct=""
+    if [ "$1" = "-d" ] || [ "$1" = "--direct" ]
     then
-        i=1
-        tst="-le"
-    else
-        i=0
-        tst="-lt"
+        direct="--direct"
+        shift
     fi
 
     typeset ssh_tag="$1"
-
     if [ "$ssh_tag" = "" ]
     then
         showsessions
@@ -37,7 +29,7 @@ function go2s {
     fi
     ssh2_verify_go2s_ssh_tag "${ssh_tag}" || return 1
 
-    ssh2 login "${ssh_tag}"
+    ssh2 login ${direct} "${ssh_tag}"
 }
 
 function ssh2_setup_tab_completion {

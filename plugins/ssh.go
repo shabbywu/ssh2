@@ -39,20 +39,32 @@ func sshCommand(port int, userHost string, extraArgs ...string) *exec.Cmd {
 	return exec.Command("ssh", args...)
 }
 
-func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *console.Console) error, error) {
+func sshCommandArgs(port int, userHost string, extraArgs ...string) []string {
+	return sshCommand(port, userHost, extraArgs...).Args
+}
+
+func sessionSSHTarget(session *models.Session) (*models.ClientConfig, *models.AuthMethod, *models.ServerConfig, string, error) {
 	clientConfig, err := session.GetClientConfig()
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, "", err
 	}
 	auth, err := clientConfig.GetAuthMethod()
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, "", err
 	}
 	serverConfig, err := session.GetServerConfig()
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, "", err
 	}
 	userHost := fmt.Sprintf("%s@%s", clientConfig.User, serverConfig.Host)
+	return clientConfig, auth, serverConfig, userHost, nil
+}
+
+func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *console.Console) error, error) {
+	_, auth, serverConfig, userHost, err := sessionSSHTarget(session)
+	if err != nil {
+		return nil, err
+	}
 
 	switch auth.Type {
 	case models.AuthPassword:
@@ -117,6 +129,55 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 		}, nil
 	default:
 		return nil, errors.New(fmt.Sprintf("不支持的 auth 类型 %s", auth.Type))
+	}
+}
+
+func (plugin *SSHPlugin) ToManualSteps(session *models.Session) ([]ManualStep, error) {
+	step, err := SSHManualStep(session)
+	if err != nil {
+		return nil, err
+	}
+	return []ManualStep{step}, nil
+}
+
+func SSHManualStep(session *models.Session) (ManualStep, error) {
+	_, auth, serverConfig, userHost, err := sessionSSHTarget(session)
+	if err != nil {
+		return ManualStep{}, err
+	}
+
+	switch auth.Type {
+	case models.AuthPassword, models.AUthInteractivePassword:
+		return ManualStep{
+			Kind:    "SSH_LOGIN",
+			Command: sshCommandArgs(serverConfig.Port, userHost),
+		}, nil
+	case models.AuthPublishKey:
+		publishKeyPath, cleanup, err := auth.PublishKeyPath()
+		if err != nil {
+			return ManualStep{}, err
+		}
+		keyArgs := append([]string{}, keyAuthSSHOptions...)
+		keyArgs = append(keyArgs, "-i", publishKeyPath)
+		return ManualStep{
+			Kind:        "SSH_LOGIN",
+			Command:     sshCommandArgs(serverConfig.Port, userHost, keyArgs...),
+			CleanupPath: publishKeyPath,
+			Cleanup:     cleanup,
+		}, nil
+	case models.AUthPublishKeyFile:
+		publishKeyPath, _, err := auth.PublishKeyPath()
+		if err != nil {
+			return ManualStep{}, err
+		}
+		keyArgs := append([]string{}, keyAuthSSHOptions...)
+		keyArgs = append(keyArgs, "-i", publishKeyPath)
+		return ManualStep{
+			Kind:    "SSH_LOGIN",
+			Command: sshCommandArgs(serverConfig.Port, userHost, keyArgs...),
+		}, nil
+	default:
+		return ManualStep{}, errors.New(fmt.Sprintf("不支持的 auth 类型 %s", auth.Type))
 	}
 }
 

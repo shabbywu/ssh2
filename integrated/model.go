@@ -23,6 +23,31 @@ func GetLoginCommands(s *models.Session) (cmds []func(cp *console.Console) error
 	return
 }
 
+func GetManualSteps(s *models.Session) (steps []plugins.ManualStep, err error) {
+	ps, err := getPlugins(s)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range ps {
+		manualAble, ok := p.(plugins.ManualAble)
+		if !ok {
+			continue
+		}
+		pluginSteps, err := manualAble.ToManualSteps(s)
+		if err != nil {
+			for _, step := range steps {
+				if step.Cleanup != nil {
+					step.Cleanup()
+				}
+			}
+			return nil, err
+		}
+		steps = append(steps, pluginSteps...)
+	}
+	return steps, nil
+}
+
 func getPlugins(s *models.Session) (result []plugins.ExpectAble, err error) {
 	data := []byte(s.Plugins)
 	for _, p := range gjson.ParseBytes(data).Array() {

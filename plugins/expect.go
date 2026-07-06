@@ -44,6 +44,22 @@ func (plugin *ExpectPlugin) ToExpectCommand(session *models.Session) (func(cp *c
 	}, nil
 }
 
+func (plugin *ExpectPlugin) ToManualSteps(session *models.Session) ([]ManualStep, error) {
+	steps := plugin.Steps
+	if len(steps) == 0 {
+		steps = []ExpectStep{{Expect: plugin.Expect, Send: plugin.Send}}
+	}
+	result := make([]ManualStep, 0, len(steps))
+	for _, step := range steps {
+		result = append(result, ManualStep{
+			Kind:   "EXPECT",
+			Expect: step.Expect,
+			Send:   step.Send,
+		})
+	}
+	return result, nil
+}
+
 func expectError(expected, output string, err error) error {
 	output = strings.TrimSpace(output)
 	if output == "" {

@@ -19,19 +19,53 @@ func TestApplyCommandKeepsCreateAlias(t *testing.T) {
 }
 
 func TestLoginCommandKeepsTagFlag(t *testing.T) {
+	var foundTag, foundDryRun, foundDirect bool
 	for _, flag := range execCommand.Flags {
 		if stringFlag, ok := flag.(*cli.StringFlag); ok && stringFlag.Name == "tag" {
-			return
+			foundTag = true
+		}
+		if boolFlag, ok := flag.(*cli.BoolFlag); ok && boolFlag.Name == "dry-run" {
+			foundDryRun = true
+		}
+		if boolFlag, ok := flag.(*cli.BoolFlag); ok && boolFlag.Name == "direct" {
+			foundDirect = true
 		}
 	}
-	t.Fatal("login command missing tag flag")
+	if !foundTag {
+		t.Fatal("login command missing tag flag")
+	}
+	if !foundDryRun {
+		t.Fatal("login command missing dry-run flag")
+	}
+	if !foundDirect {
+		t.Fatal("login command missing direct flag")
+	}
+}
+
+func TestShellQuoteCommand(t *testing.T) {
+	got := shellQuoteCommand([]string{"ssh", "-i", "/tmp/key file", "root@example.com", "echo 'ok'"})
+	want := `ssh -i '/tmp/key file' root@example.com 'echo '"'"'ok'"'"''`
+	if got != want {
+		t.Fatalf("quoted command = %q, want %q", got, want)
+	}
+}
+
+func TestShellQuoteCommandWithRaw(t *testing.T) {
+	got := shellQuoteCommandWithRaw([]string{"ssh", "-i", "/tmp/key file", "root@example.com"}, map[string]string{
+		"/tmp/key file": `"$ssh2_key_file"`,
+	})
+	want := `ssh -i "$ssh2_key_file" root@example.com`
+	if got != want {
+		t.Fatalf("quoted command = %q, want %q", got, want)
+	}
 }
 
 func TestWrapperKeepsGo2S(t *testing.T) {
 	content := string(wrappersh)
 	for _, expected := range []string{
 		"function go2s",
-		`ssh2 login "${ssh_tag}"`,
+		`ssh2 login ${direct} "${ssh_tag}"`,
+		`--direct`,
 		`ssh2 get --kind Session --template "{{ .Tag }}"`,
 	} {
 		if !strings.Contains(content, expected) {
