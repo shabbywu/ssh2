@@ -11,7 +11,9 @@ ssh连接管理工具
 本项目基于 golang 1.22 开发, 可以直接通过以下命令安装
 
 ```bash
-> go install github.comshabbywu/ssh2
+go install github.com/shabbywu/ssh2@latest
+ssh2 install-ssh2-auto-complete
+source "$(ssh2 get-wrapper-dot-sh)"
 ```
 
 ### 2. 使用示例
@@ -63,8 +65,15 @@ spec:
     tag: session-2
     name: unique_name_to_mark_this_session_2
     plugins:
-        -   kind:   SSH_WETERM
+        -   kind:   SSH_LOGIN
             args:
+        -   kind:   EXPECT
+            args:
+                steps:
+                    -   expect: jump-host$
+                        send: "ssh target\r"
+                    -   expect: "password:"
+                        send: "target-password\r"
     client:
       ref:
         field: name
@@ -79,7 +88,12 @@ spec:
 ssh2 create -f demo.yml
 # 登录 session-1 服务器
 ssh2 login session-1
+# 使用快捷 wrapper 登录，或无参数列出所有 session tag
+go2s session-1
+go2s
 ```
+
+`SSH_WETERM` 是历史文档里的外部插件示例，当前 Go 版本未内置；需要类似能力时请使用 `EXPECT.steps` 或后续扩展插件。
 
 ## 附录
 ### 数据结构
@@ -126,10 +140,11 @@ spec:
             args:
                 expect: str
                 send:   str
-                raw:
-                -   str
-                -   str
-                -   str
+                steps:
+                -   expect: str
+                    send: str
+                -   expect: str
+                    send: str
     client:
         ref:
             field: id/name
@@ -171,7 +186,7 @@ spec:
                                                           |                                  |  +-------+------+  |
                                                           v                                  |          ^         |
                                                     +-----+------+                           |          v         |
-                                    cretae/update   |            |                           |  +-------+------+  |
+                                    create/update   |            |                           |  +-------+------+  |
                                  +----------------->+ YamlParser |                           |  |              |  |
                                  |                  |            |                           |  | ClientConfig |  |
                                  |                  +-----+------+                           |  |              |  |
@@ -180,26 +195,24 @@ spec:
                                  |                        v                                  |          |         |
 +-----------------+         +----+--------+         +-----+-------+           +----------+   |    +-----+---+     |
 |                 | invoke  |             |  read   |             |           |          |   |    |         |     |
-|  shell-wrapper  +-------->+  Click-cli  +-------->+ sqlalchemy  +---------->+  models  |   |    | Session |     |
+|  shell-wrapper  +-------->+  urfave-cli +-------->+  buntdb     +---------->+  models  |   |    | Session |     |
 |                 |         |             |         |             |           |          |   |    |         |     |
 +-----+-----------+         +-------------+         +-------------+           +----------+   |    +-----+---+     |
       ^                                                                                      |          |         |
       |                                                                                      |          |         |
       |                                             +-------------+                          |  +-------+------+  |
-      |    eval              +-----------+ generate |             |           bind           |  |              |  |
-      +--------------------+ | expect.sh |  <----+  |   plugins   +<----------------------------+ ServerConfig |  |
+      |    go2s             +-----------+ execute  |             |           bind           |  |              |  |
+      +--------------------+ | ssh2 login|  <----+  |   plugins   +<----------------------------+ ServerConfig |  |
                              +-----------+          |             |                          |  |              |  |
                                   ..                +-------------+                          |  +--------------+  |
                                   ..                |             |                          |                    |
                              +-----------+          | *SSH_LOGIN  |                          +--------------------+
-                             | expect.sh |          |             |
-                             +-----------+          | *SSH_WETERM |
-                                  ..                |             |
-                                  ..                | *EXPECT     |
+                             |    pty    |          |             |
+                             +-----------+          | *EXPECT     |
                                   ..                |             |
                                   ..                +-------------+
                              +-----------+
-                             | expect.sh |
+                             | terminal  |
                              +-----------+
 
 ```

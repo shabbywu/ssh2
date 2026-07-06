@@ -26,7 +26,11 @@ func GetLoginCommands(s *models.Session) (cmds []func(cp *console.Console) error
 func getPlugins(s *models.Session) (result []plugins.ExpectAble, err error) {
 	data := []byte(s.Plugins)
 	for _, p := range gjson.ParseBytes(data).Array() {
-		result = append(result, plugins.Parse(p))
+		plugin, err := plugins.Parse(p)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, plugin)
 	}
 	return result, nil
 }

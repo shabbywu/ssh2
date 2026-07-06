@@ -16,8 +16,14 @@ var execCommand = &cli.Command{
 	Name:      "login",
 	Usage:     "登录服务器",
 	ArgsUsage: "[Session Tag]",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "tag",
+			Usage: "session tag",
+		},
+	},
 	Before: func(ctx *cli.Context) error {
-		if ctx.NArg() != 1 {
+		if ctx.NArg() != 1 && ctx.String("tag") == "" {
 			cli.ShowCommandHelp(ctx, "login")
 			objs := models.List[models.Session]("Session")
 			fmt.Println("avaialbe sessions:")
@@ -29,7 +35,10 @@ var execCommand = &cli.Command{
 		return nil
 	},
 	Action: func(ctx *cli.Context) error {
-		tag := ctx.Args().First()
+		tag := ctx.String("tag")
+		if tag == "" {
+			tag = ctx.Args().First()
+		}
 		session, err := models.GetByField[models.Session]("Session", "tag", tag)
 		if err != nil {
 			log.Fatal(err)
@@ -41,6 +50,9 @@ var execCommand = &cli.Command{
 			return err
 		}
 		cp, err := console.NewConsole()
+		if err != nil {
+			return err
+		}
 		defer cp.Close()
 
 		for _, cmd := range cmds {
@@ -48,7 +60,7 @@ var execCommand = &cli.Command{
 				log.Fatal(err)
 			}
 		}
-		
+
 		// When the terminal window size changes, synchronize the size of the pty
 		onSizeChange := func(cols, rows uint16) {
 			cp.Pty.Resize(cols, rows)

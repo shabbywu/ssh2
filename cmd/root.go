@@ -18,5 +18,6 @@ func init() {
 		getCommand,
 		applyCommand,
 		installCommand,
+		wrapperPathCommand,
 	}...)
 }

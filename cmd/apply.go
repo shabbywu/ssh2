@@ -2,15 +2,18 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 	"ssh2/parser"
 )
 
 var applyCommand = &cli.Command{
-	Name:  "apply",
-	Usage: "apply resource definition",
+	Name:    "apply",
+	Aliases: []string{"create"},
+	Usage:   "apply resource definition",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:     "file",
@@ -19,7 +22,7 @@ var applyCommand = &cli.Command{
 		},
 	},
 	Action: func(ctx *cli.Context) (err error) {
-		data, err := ioutil.ReadFile(ctx.Value("file").(string))
+		data, err := ioutil.ReadFile(ctx.String("file"))
 		if err != nil {
 			return err
 		}
@@ -27,8 +30,15 @@ var applyCommand = &cli.Command{
 		var record parser.DocumentRecord
 		decoder := yaml.NewDecoder(bytes.NewReader(data))
 
-		for decoder.Decode(&record) == nil {
-			_, err := parser.YamlParser{}.ParseRecord(record)
+		for {
+			err := decoder.Decode(&record)
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if err != nil {
+				return err
+			}
+			_, err = parser.YamlParser{}.ParseRecord(record)
 			if err != nil {
 				return err
 			}

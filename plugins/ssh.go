@@ -32,29 +32,56 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 	switch auth.Type {
 	case models.AuthPassword:
 		return func(cp *console.Console) error {
+			password, err := auth.DecryptedContent()
+			if err != nil {
+				return err
+			}
 			loginCmd := exec.Command("ssh", "-p", strconv.Itoa(serverConfig.Port), userHost)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
 				return err
 			}
 			if _, err := cp.ExpectString(auth.ExpectForPassword); err != nil {
-				return fmt.Errorf("failed when expect passowrd input, detail: %s", err)
+				return fmt.Errorf("failed when expecting password input: %s", err)
 			}
 			time.Sleep(1)
-			if _, err := cp.Send(auth.GetDecryptedContent() + "\r"); err != nil {
+			if _, err := cp.Send(password + "\r"); err != nil {
 				return fmt.Errorf("failed when send password, detail: %s", err)
 			}
 			return nil
 
 		}, nil
+	case models.AUthInteractivePassword:
+		return func(cp *console.Console) error {
+			loginCmd := exec.Command("ssh", "-p", strconv.Itoa(serverConfig.Port), userHost)
+			cp.Children = append(cp.Children, loginCmd)
+			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
+				return err
+			}
+			if auth.ExpectForPassword != "" {
+				if _, err := cp.ExpectString(auth.ExpectForPassword); err != nil {
+					return fmt.Errorf("failed when expecting interactive password input: %s", err)
+				}
+			}
+			return nil
+		}, nil
 	case models.AuthPublishKey:
 		fallthrough
 	case models.AUthPublishKeyFile:
-		publishKeyPath := auth.GetPublishKeyPath()
+		publishKeyPath, cleanup, err := auth.PublishKeyPath()
+		if err != nil {
+			return nil, err
+		}
 		return func(cp *console.Console) error {
-			loginCmd := exec.Command("ssh", "-p", strconv.Itoa(serverConfig.Port), userHost, "-i", publishKeyPath)
+			if cleanup != nil {
+				cp.Cleanups = append(cp.Cleanups, cleanup)
+			}
+			loginCmd := exec.Command("ssh", "-i", publishKeyPath, "-p", strconv.Itoa(serverConfig.Port), userHost)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
+				if cleanup != nil {
+					cleanup()
+				}
 				return err
 			}
 			return nil
@@ -64,8 +91,8 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 	}
 }
 
-func ParseSSHPlugin(args gjson.Result) ExpectAble {
-	return &SSHPlugin{}
+func ParseSSHPlugin(args gjson.Result) (ExpectAble, error) {
+	return &SSHPlugin{}, nil
 }
 
 func init() {

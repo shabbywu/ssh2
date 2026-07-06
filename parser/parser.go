@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"os"
 	"ssh2/db"
 	"ssh2/models"
 	"strconv"
@@ -12,8 +12,8 @@ import (
 
 // DocumentRecord: 序列化到文档的模型
 type DocumentRecord struct {
-	Kind string
-	Spec map[interface{}]interface{}
+	Kind string                      `yaml:"kind"`
+	Spec map[interface{}]interface{} `yaml:"spec"`
 }
 
 type YamlParser struct {
@@ -59,17 +59,60 @@ func parseAuthMethodSpec(spec map[interface{}]interface{}) (models.Model, error)
 	}
 
 	parsed.ID = id
-	parsed.Name = spec["name"].(string)
-	parsed.Type = spec["type"].(string)
-	// TODO: 混淆加密？
-	parsed.Content = spec["content"].(string)
+	parsed.Name = stringField(spec, "name")
+	parsed.Type = stringField(spec, "type")
+	parsed.Content = stringField(spec, "content")
 
-	if expect_for_password, ok := spec["expect_for_password"]; ok {
-		parsed.ExpectForPassword = expect_for_password.(string)
+	if expectForPassword, ok := spec["expect_for_password"]; ok {
+		parsed.ExpectForPassword = fmt.Sprint(expectForPassword)
 	} else {
 		parsed.ExpectForPassword = ""
 	}
+
+	savePrivateKeyInDB := boolField(spec, "save_private_key_in_db")
+	switch parsed.Type {
+	case models.AuthPassword, models.AuthPublishKey, models.AUthPublishKeyFile, models.AUthInteractivePassword:
+	default:
+		return parsed, fmt.Errorf("unsupported auth type %s", parsed.Type)
+	}
+	if parsed.Type == models.AUthPublishKeyFile && savePrivateKeyInDB {
+		content, err := os.ReadFile(parsed.Content)
+		if err != nil {
+			return parsed, err
+		}
+		parsed.Type = models.AuthPublishKey
+		parsed.Content = string(content)
+	}
+	if parsed.Type == models.AUthInteractivePassword {
+		parsed.Content = ""
+	}
+	if err := parsed.EncryptContent(); err != nil {
+		return parsed, err
+	}
 	return parsed, nil
+}
+
+func stringField(spec map[interface{}]interface{}, name string) string {
+	if value, ok := spec[name]; ok && value != nil {
+		return fmt.Sprint(value)
+	}
+	return ""
+}
+
+func boolField(spec map[interface{}]interface{}, name string) bool {
+	value, ok := spec[name]
+	if !ok || value == nil {
+		return false
+	}
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		parsed, _ := strconv.ParseBool(v)
+		return parsed
+	default:
+		return false
+	}
 }
 
 func parseClientConfig(spec map[interface{}]interface{}) (models.Model, error) {
@@ -164,13 +207,16 @@ func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 			// 处理使用 ref 引用的逻辑
 			if _ref := objDefinition["ref"]; _ref != nil {
 				ref := _ref.(map[interface{}]interface{})
-				obj, _ := models.GetByFieldGeneric(kind, ref["field"].(string), ref["value"])
+				obj, err := models.GetByFieldGeneric(kind, ref["field"].(string), ref["value"])
+				if err != nil {
+					return nil, fmt.Errorf("can't find model with kind=%s where %s=%s: %w", kind, ref["field"], ref["value"], err)
+				}
 				if instance, ok := obj.(models.Model); ok {
 					// 替换属性成外键字段
 					delete(spec, attr)
 					spec[attrToFullKey[attr]] = instance.GetId()
 				} else {
-					log.Fatal(fmt.Errorf("can't find model with kind=%s where %s=%s, detail: %s", kind, ref["field"], ref["value"], obj))
+					return nil, fmt.Errorf("can't find model with kind=%s where %s=%s, detail: %s", kind, ref["field"], ref["value"], obj)
 				}
 			} else {
 				// 递归解析属性
@@ -183,7 +229,7 @@ func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 
 				instance, err := p.ParseRecord(innerRecord)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				// 替换属性成外键字段
 				delete(spec, attr)
@@ -195,7 +241,7 @@ func (p YamlParser) ParseRecord(record DocumentRecord) (*models.Model, error) {
 	if parser, ok := kindParserMapper[record.Kind]; ok {
 		instance, err := parser(spec)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		return &instance, nil
 	} else {

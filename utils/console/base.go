@@ -7,6 +7,7 @@ import (
 
 type Console struct {
 	Children []*exec.Cmd
+	Cleanups []func()
 	*expect.Console
 }
 
@@ -16,6 +17,11 @@ func NewConsole() (*Console, error) {
 }
 
 func (c *Console) Wait() error {
+	defer func() {
+		for _, cleanup := range c.Cleanups {
+			cleanup()
+		}
+	}()
 	for _, child := range c.Children {
 		if err := child.Wait(); err != nil {
 			return err

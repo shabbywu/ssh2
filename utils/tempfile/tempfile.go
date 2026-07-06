@@ -2,7 +2,6 @@ package tempfile
 
 import (
 	"os"
-	"path"
 )
 
 type TempFileManger struct {
@@ -32,7 +31,10 @@ func NewManager(dir string) *TempFileManger {
 
 func (m *TempFileManger) TempFile(pattern string) (f *os.File, err error) {
 	file, err := os.CreateTemp(m.dir, pattern)
-	os.Chown(path.Join(m.dir, file.Name()), os.Getgid(), os.Getuid())
+	if err != nil {
+		return nil, err
+	}
+	_ = os.Chown(file.Name(), os.Getuid(), os.Getgid())
 	m.cleaners = append(m.cleaners, func() {
 		os.Remove(file.Name())
 	})

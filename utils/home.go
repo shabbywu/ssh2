@@ -18,4 +18,7 @@ func init() {
 		}
 		SSH2_HOME = filepath.Join(HOME, ".ssh", "ssh2")
 	}
+	if err := os.MkdirAll(SSH2_HOME, 0700); err != nil {
+		log.Fatal(err)
+	}
 }

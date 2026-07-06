@@ -1,5 +1,5 @@
 function showsessions {
-    ssh2 get --kind Session
+    ssh2 get --kind Session --template "{{ .Tag }}"
 }
 
 function ssh2_verify_go2s_ssh_tag {
@@ -37,7 +37,7 @@ function go2s {
     fi
     ssh2_verify_go2s_ssh_tag "${ssh_tag}" || return 1
 
-    ssh2 login --tag "${ssh_tag}"
+    ssh2 login "${ssh_tag}"
 }
 
 function ssh2_setup_tab_completion {
