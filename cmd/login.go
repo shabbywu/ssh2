@@ -2,14 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/ActiveState/termtest/expect"
 	"github.com/iyzyi/aiopty/term"
 	"github.com/urfave/cli/v2"
 	"io"
-	"log"
 	"os"
+	"os/signal"
 	"ssh2/integrated"
 	"ssh2/models"
 	"ssh2/utils/console"
+	"sync"
+	"syscall"
 )
 
 var execCommand = &cli.Command{
@@ -41,7 +44,7 @@ var execCommand = &cli.Command{
 		}
 		session, err := models.GetByField[models.Session]("Session", "tag", tag)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("session %q not found: %w", tag, err)
 		}
 
 		cmds, err := integrated.GetLoginCommands(&session)
@@ -49,15 +52,20 @@ var execCommand = &cli.Command{
 		if err != nil {
 			return err
 		}
-		cp, err := console.NewConsole()
+		cp, err := console.NewConsole(expect.WithStdout(os.Stdout))
 		if err != nil {
 			return err
 		}
 		defer cp.Close()
+		interrupted, stopSignals := handleLoginSignals(cp)
+		defer stopSignals()
 
-		for _, cmd := range cmds {
+		for i, cmd := range cmds {
 			if err := cmd(cp); err != nil {
-				log.Fatal(err)
+				if interruptErr := loginInterruptError(tag, interrupted); interruptErr != nil {
+					return interruptErr
+				}
+				return fmt.Errorf("login %q failed at step %d/%d: %w", tag, i+1, len(cmds), err)
 			}
 		}
 
@@ -74,10 +82,54 @@ var execCommand = &cli.Command{
 		defer t.Close()
 
 		// start data exchange between terminal and pty
-		go func() { io.Copy(t, cp.GetStdout()) }()
+		go func() { io.Copy(os.Stdout, cp.GetStdout()) }()
 		go func() { io.Copy(cp, t) }()
-		return cp.Wait()
+		if err := cp.Wait(); err != nil {
+			if interruptErr := loginInterruptError(tag, interrupted); interruptErr != nil {
+				return interruptErr
+			}
+			return fmt.Errorf("login %q ssh process exited: %w", tag, err)
+		}
+		return nil
 	},
+}
+
+func handleLoginSignals(cp *console.Console) (<-chan os.Signal, func()) {
+	signals := make(chan os.Signal, 1)
+	interrupted := make(chan os.Signal, 1)
+	done := make(chan struct{})
+	var interruptOnce sync.Once
+	interrupt := func(sig os.Signal) {
+		interruptOnce.Do(func() {
+			select {
+			case interrupted <- sig:
+			default:
+			}
+			cp.KillChildren()
+			_ = cp.Close()
+		})
+	}
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		select {
+		case sig := <-signals:
+			interrupt(sig)
+		case <-done:
+		}
+	}()
+	return interrupted, func() {
+		signal.Stop(signals)
+		close(done)
+	}
+}
+
+func loginInterruptError(tag string, interrupted <-chan os.Signal) error {
+	select {
+	case sig := <-interrupted:
+		return fmt.Errorf("login %q interrupted by %s", tag, sig)
+	default:
+		return nil
+	}
 }
 
 func init() {

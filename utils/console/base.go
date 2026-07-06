@@ -11,9 +11,17 @@ type Console struct {
 	*expect.Console
 }
 
-func NewConsole() (*Console, error) {
-	cp, err := expect.NewConsole()
+func NewConsole(opts ...expect.ConsoleOpt) (*Console, error) {
+	cp, err := expect.NewConsole(opts...)
 	return &Console{Console: cp}, err
+}
+
+func (c *Console) KillChildren() {
+	for _, child := range c.Children {
+		if child.Process != nil {
+			_ = child.Process.Kill()
+		}
+	}
 }
 
 func (c *Console) Wait() error {

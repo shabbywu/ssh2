@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -50,5 +51,14 @@ func TestParseUnknownPluginReturnsError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "SSH_WETERM") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestExpectErrorIncludesOutput(t *testing.T) {
+	err := expectError("Last login", "ssh: connect to host 10.202.0.79 port 32200: Network is unreachable\r\n", errors.New("EOF"))
+	for _, expected := range []string{"Last login", "EOF", "Network is unreachable"} {
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("error %q missing %q", err.Error(), expected)
+		}
 	}
 }

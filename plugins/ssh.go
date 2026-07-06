@@ -14,6 +14,31 @@ import (
 type SSHPlugin struct {
 }
 
+var defaultSSHOptions = []string{
+	"-tt",
+	"-o", "ConnectTimeout=10",
+	"-o", "ConnectionAttempts=1",
+	"-o", "StrictHostKeyChecking=accept-new",
+	"-o", "ServerAliveInterval=15",
+	"-o", "ServerAliveCountMax=2",
+}
+
+var keyAuthSSHOptions = []string{
+	"-o", "BatchMode=yes",
+	"-o", "PreferredAuthentications=publickey",
+	"-o", "PasswordAuthentication=no",
+	"-o", "KbdInteractiveAuthentication=no",
+	"-o", "IdentitiesOnly=yes",
+	"-o", "IdentityAgent=none",
+}
+
+func sshCommand(port int, userHost string, extraArgs ...string) *exec.Cmd {
+	args := append([]string{}, defaultSSHOptions...)
+	args = append(args, extraArgs...)
+	args = append(args, "-p", strconv.Itoa(port), userHost)
+	return exec.Command("ssh", args...)
+}
+
 func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *console.Console) error, error) {
 	clientConfig, err := session.GetClientConfig()
 	if err != nil {
@@ -36,13 +61,14 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 			if err != nil {
 				return err
 			}
-			loginCmd := exec.Command("ssh", "-p", strconv.Itoa(serverConfig.Port), userHost)
+			loginCmd := sshCommand(serverConfig.Port, userHost)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
 				return err
 			}
-			if _, err := cp.ExpectString(auth.ExpectForPassword); err != nil {
-				return fmt.Errorf("failed when expecting password input: %s", err)
+			output, err := cp.ExpectString(auth.ExpectForPassword)
+			if err != nil {
+				return expectError(auth.ExpectForPassword, output, err)
 			}
 			time.Sleep(1)
 			if _, err := cp.Send(password + "\r"); err != nil {
@@ -53,14 +79,15 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 		}, nil
 	case models.AUthInteractivePassword:
 		return func(cp *console.Console) error {
-			loginCmd := exec.Command("ssh", "-p", strconv.Itoa(serverConfig.Port), userHost)
+			loginCmd := sshCommand(serverConfig.Port, userHost)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
 				return err
 			}
 			if auth.ExpectForPassword != "" {
-				if _, err := cp.ExpectString(auth.ExpectForPassword); err != nil {
-					return fmt.Errorf("failed when expecting interactive password input: %s", err)
+				output, err := cp.ExpectString(auth.ExpectForPassword)
+				if err != nil {
+					return expectError(auth.ExpectForPassword, output, err)
 				}
 			}
 			return nil
@@ -76,7 +103,9 @@ func (plugin *SSHPlugin) ToExpectCommand(session *models.Session) (func(cp *cons
 			if cleanup != nil {
 				cp.Cleanups = append(cp.Cleanups, cleanup)
 			}
-			loginCmd := exec.Command("ssh", "-i", publishKeyPath, "-p", strconv.Itoa(serverConfig.Port), userHost)
+			keyArgs := append([]string{}, keyAuthSSHOptions...)
+			keyArgs = append(keyArgs, "-i", publishKeyPath)
+			loginCmd := sshCommand(serverConfig.Port, userHost, keyArgs...)
 			cp.Children = append(cp.Children, loginCmd)
 			if err := cp.Pty.StartProcessInTerminal(loginCmd); err != nil {
 				if cleanup != nil {

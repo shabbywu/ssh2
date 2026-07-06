@@ -8,5 +8,10 @@ import (
 )
 
 func (c *Console) GetStdout() io.Reader {
-	return c.Tty()
+	reader, writer := io.Pipe()
+	go func() {
+		_, err := c.Pty.WriteTo(writer)
+		_ = writer.CloseWithError(err)
+	}()
+	return reader
 }

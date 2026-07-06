@@ -6,6 +6,7 @@ import (
 	"github.com/tidwall/gjson"
 	"ssh2/models"
 	"ssh2/utils/console"
+	"strings"
 )
 
 type ExpectStep struct {
@@ -29,8 +30,9 @@ func (plugin *ExpectPlugin) ToExpectCommand(session *models.Session) (func(cp *c
 			if step.Expect == "" {
 				return fmt.Errorf("EXPECT step requires an expect value")
 			}
-			if _, err := cp.Expect(expect.LongString(step.Expect)); err != nil {
-				return err
+			output, err := cp.Expect(expect.LongString(step.Expect))
+			if err != nil {
+				return expectError(step.Expect, output, err)
 			}
 			if step.Send != "" {
 				if _, err := cp.Send(step.Send); err != nil {
@@ -40,6 +42,14 @@ func (plugin *ExpectPlugin) ToExpectCommand(session *models.Session) (func(cp *c
 		}
 		return nil
 	}, nil
+}
+
+func expectError(expected, output string, err error) error {
+	output = strings.TrimSpace(output)
+	if output == "" {
+		return fmt.Errorf("EXPECT failed waiting for %q: %w", expected, err)
+	}
+	return fmt.Errorf("EXPECT failed waiting for %q: %w; output: %s", expected, err, output)
 }
 
 func ParseExpectPlugin(args gjson.Result) (ExpectAble, error) {
