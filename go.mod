@@ -5,6 +5,7 @@ go 1.22
 require (
 	github.com/ActiveState/termtest/expect v0.7.0
 	github.com/gdamore/tcell/v2 v2.8.1
+	github.com/iyzyi/aiopty v0.1.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	github.com/rivo/tview v0.42.1-0.20250929082832-e113793670e2
@@ -12,7 +13,7 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/urfave/cli/v2 v2.3.0
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -25,7 +26,6 @@ require (
 	github.com/creack/pty v1.1.17 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/iyzyi/aiopty v0.1.0 // indirect
 	github.com/kr/pty v1.1.8 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
