@@ -2,8 +2,11 @@ package models
 
 import (
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
+	"ssh2/utils"
 	"ssh2/utils/crypto"
 )
 
@@ -34,6 +37,15 @@ func TestAuthMethodPlainTextContentStillReads(t *testing.T) {
 }
 
 func TestAuthMethodPublishKeyContentTempFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		originalHome := utils.SSH2_HOME
+		utils.SSH2_HOME = filepath.Join(t.TempDir(), ".ssh", "ssh2")
+		if err := os.MkdirAll(utils.SSH2_HOME, 0700); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { utils.SSH2_HOME = originalHome })
+	}
+
 	auth := &AuthMethod{Name: "test-key", Type: AuthPublishKey, Content: "PRIVATE KEY"}
 	if err := auth.EncryptContent(); err != nil {
 		t.Fatal(err)
@@ -52,12 +64,17 @@ func TestAuthMethodPublishKeyContentTempFile(t *testing.T) {
 	if string(data) != "PRIVATE KEY" {
 		t.Fatalf("temp key content = %q", data)
 	}
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
+	if runtime.GOOS == "windows" && filepath.Dir(path) != utils.SSH2_HOME {
+		t.Fatalf("temp key dir = %q, want %q", filepath.Dir(path), utils.SSH2_HOME)
 	}
-	if mode := info.Mode().Perm(); mode != 0600 {
-		t.Fatalf("temp key mode = %o", mode)
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if mode := info.Mode().Perm(); mode != 0600 {
+			t.Fatalf("temp key mode = %o", mode)
+		}
 	}
 }
 

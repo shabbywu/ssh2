@@ -22,7 +22,7 @@ func GetManager(dir string) *TempFileManger {
 
 func NewManager(dir string) *TempFileManger {
 	if dir == "" {
-		dir = os.TempDir()
+		dir = defaultDir()
 	}
 	return &TempFileManger{
 		dir: dir,
