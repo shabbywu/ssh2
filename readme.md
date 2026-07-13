@@ -7,13 +7,95 @@ ssh连接管理工具
 -   基于 expect 指令进行额外操作(e.g. 通过跳板机登录运维机)
 
 ## 使用说明
-### 1. 如何安装该项目
-本项目基于 golang 1.22 开发, 可以直接通过以下命令安装
+### 1. 安装 ssh2 与 go2s
+本项目基于 golang 1.22 开发。先安装 `ssh2`，并确保 Go 的 bin 目录已经加入 `PATH`：
 
 ```bash
 go install github.com/shabbywu/ssh2@latest
-ssh2 install-ssh2-auto-complete
+ssh2 --help
+```
+
+`go2s` 是调用 `ssh2 login` 的 shell wrapper，支持无参数列出 session tag 以及 `-d`/`--direct`，并在 Zsh 和 PowerShell 中提供 tag 补全。wrapper 默认安装到 `~/.ssh/ssh2`；设置了 `SSH2_HOME` 时则使用该目录。
+
+`ssh2 install-ssh2-auto-complete` 可以安装当前平台的默认 wrapper：Windows 安装 PowerShell 脚本，其他平台安装 Bash/Zsh 脚本。该命令只写入脚本，不会修改 shell profile。也可以按下面的方式显式安装并启用。
+
+#### Linux / macOS：Bash
+
+仅在当前终端启用：
+
+```bash
 source "$(ssh2 get-wrapper-dot-sh)"
+```
+
+永久启用时，将实际脚本路径写入 `~/.bashrc`；macOS 使用 Bash 登录 shell 时可改为 `~/.bash_profile`：
+
+```bash
+wrapper="$(ssh2 get-wrapper-dot-sh)"
+printf '\nsource "%s"\n' "$wrapper" >> ~/.bashrc  # 只需执行一次
+source ~/.bashrc
+```
+
+#### Linux / macOS：Zsh
+
+```zsh
+# 当前终端
+source "$(ssh2 get-wrapper-dot-sh)"
+
+# 永久启用，只需执行一次
+wrapper="$(ssh2 get-wrapper-dot-sh)"
+printf '\nsource "%s"\n' "$wrapper" >> ~/.zshrc
+source ~/.zshrc
+```
+
+#### Windows：Windows PowerShell 5.1 / PowerShell 7
+
+仅在当前终端启用：
+
+```powershell
+$wrapper = ssh2 get-wrapper-dot-ps1
+. $wrapper
+```
+
+永久启用时，将 dot-source 命令写入当前 PowerShell 的 `$PROFILE`。Windows PowerShell 和 PowerShell 7 使用不同的 profile；如果两者都使用，需要分别执行：
+
+```powershell
+$wrapper = ssh2 get-wrapper-dot-ps1
+$profileDirectory = Split-Path -Parent $PROFILE
+if (-not (Test-Path -LiteralPath $profileDirectory)) {
+    New-Item -ItemType Directory -Path $profileDirectory -Force | Out-Null
+}
+if (-not (Test-Path -LiteralPath $PROFILE)) {
+    New-Item -ItemType File -Path $PROFILE -Force | Out-Null
+}
+$escapedWrapper = $wrapper.Replace("'", "''")
+$loadLine = ". '$escapedWrapper'"
+if (-not (Select-String -LiteralPath $PROFILE -SimpleMatch $loadLine -Quiet)) {
+    Add-Content -LiteralPath $PROFILE -Value $loadLine
+}
+. $PROFILE
+```
+
+如果 PowerShell 提示脚本执行被禁用，可以在确认本机安全策略后为当前用户启用本地脚本，再重新加载 profile：
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+. $PROFILE
+```
+
+Windows `cmd.exe` 不提供 `go2s` wrapper，可以直接使用 `ssh2 login <tag>`。Git Bash 用户可使用 Unix 脚本，并用 `cygpath` 转换 Windows 路径：
+
+```bash
+wrapper="$(ssh2 get-wrapper-dot-sh)"
+source "$(cygpath -u "$wrapper")"
+```
+
+安装完成后可以用以下命令验证：
+
+```text
+go2s
+go2s session-1
+go2s -d session-1
+go2s --direct session-1
 ```
 
 ### 2. 使用示例

@@ -19,5 +19,6 @@ func init() {
 		applyCommand,
 		installCommand,
 		wrapperPathCommand,
+		powerShellWrapperPathCommand,
 	}...)
 }
